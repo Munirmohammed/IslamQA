@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Islam Question & Answer - Knowledge Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dark-theme">
+    <!-- App Container -->
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Logo -->
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-mosque"></i>
+                    <div class="logo-text">
+                        <h1>Islamic Q&A</h1>
+                        <p>Knowledge Hub</p>
+                        <small>Founded and Developed by<br>Munir Mohammed</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theme Toggle -->
+            <div class="theme-controls">
+                <button class="theme-btn active" data-theme="dark">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="theme-btn" data-theme="light">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <button class="theme-btn" data-theme="auto">
+                    <i class="fas fa-circle-half-stroke"></i>
+                </button>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-item active" data-section="home">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-section="categories">
+                        <i class="fas fa-sitemap"></i>
+                        <span>Categories</span>
+                    </div>
+                    <div class="nav-item" data-section="answers">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Recent Q&A</span>
+                    </div>
+                    <div class="nav-item" data-section="chat">
+                        <i class="fas fa-comments"></i>
+                        <span>AI Chat</span>
+                    </div>
+                    <div class="nav-item" data-section="search">
+                        <i class="fas fa-search"></i>
+                        <span>Search Knowledge</span>
+                    </div>
+                    <div class="nav-item" data-section="ask">
+                        <i class="fas fa-question-circle"></i>
+                        <span>Ask Question</span>
+                    </div>
+                    <div class="nav-item" data-section="profile">
+                        <i class="fas fa-user"></i>
+                        <span>My Profile</span>
+                    </div>
+                    <div class="nav-item" data-section="saved">
+                        <i class="fas fa-bookmark"></i>
+                        <span>Saved Answers</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-item" onclick="auth.showModal(document.getElementById('loginModal'))">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Login / Register</span>
+                    </div>
+                    <div class="nav-item offline-settings">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="search-container">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search" id="globalSearch">
+                        <button class="search-filter-btn">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <button class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="navigation.navigateToSection('ask')">
+                        <i class="fas fa-plus"></i>
+                        Ask Question
+                    </button>
+                    <div class="language-selector">
+                        <i class="fas fa-globe"></i>
+                        <span>English</span>
+                    </div>
+                    <button class="contribute-btn" onclick="auth.showModal(document.getElementById('loginModal'))">
+                        <i class="fas fa-user"></i>
+                        Login
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Sections -->
+            <div class="content-wrapper">
+                <!-- Home Section (New Answers) -->
+                <section id="home-section" class="content-section active">
+                    <div class="content-grid">
+                        <!-- New Answers -->
+                        <div class="content-column main-column">
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <i class="fas fa-home section-icon"></i>
+                                    <h2>Welcome to Islamic Q&A Knowledge Hub</h2>
+                                </div>
+                                <p style="color: var(--text-white-secondary); margin-bottom: 2rem;">
+                                    Discover authentic Islamic knowledge through our comprehensive Q&A platform powered by AI and Islamic scholarship.
+                                </p>
+                            </div>
+
+                            <div class="answers-list" id="answersList">
+                                <!-- Dynamic content will be loaded here -->
+                                <div class="answer-card">
+                                    <div class="answer-content">
+                                        <h3 class="answer-title">Welcome to Islamic Q&A Knowledge Hub</h3>
+                                        <p class="answer-excerpt">This platform provides authentic Islamic knowledge through our comprehensive Q&A system. Ask questions, find answers, and connect with fellow Muslims worldwide.</p>
+                                        <div class="answer-meta">
+                                            <span class="answer-date">Today</span>
+                                        </div>
+                                    </div>
+                                    <div class="answer-actions">
+                                        <button class="action-btn" title="Save">
+                                            <i class="fas fa-bookmark"></i>
+                                            Save
+                                        </button>
+                                        <button class="action-btn" title="Download">
+                                            <i class="fas fa-download"></i>
+                                            Download
+                                        </button>
+                                        <button class="action-btn" title="Share">
+                                            <i class="fas fa-share"></i>
+                                            Share
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category Tree Sidebar -->
+                        <div class="content-column sidebar-column">
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <i class="fas fa-chart-bar section-icon"></i>
+                                    <h3>Platform Statistics</h3>
+                                </div>
+                            </div>
+
+                            <div class="category-tree">
+                                <div class="category-item">
+                                    <div class="category-header">
+                                        <h4>🤖 AI-Powered Responses</h4>
+                                        <div class="category-stats">
+                                            <span><i class="fas fa-robot"></i> Hybrid AI System</span>
+                                            <span><i class="fas fa-lightning-bolt"></i> Instant Answers</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="category-item">
+                                    <div class="category-header">
+                                        <h4>📚 Knowledge Categories</h4>
+                                        <div class="category-stats">
+                                            <span><i class="fas fa-praying-hands"></i> Prayer & Worship</span>
+                                            <span><i class="fas fa-book-open"></i> Quran & Hadith</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="category-item">
+                                    <div class="category-header">
+                                        <h4>🔍 Smart Search</h4>
+                                        <div class="category-stats">
+                                            <span><i class="fas fa-search"></i> ML-Powered Search</span>
+                                            <span><i class="fas fa-language"></i> Multi-language</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="category-item">
+                                    <div class="category-header">
+                                        <h4>💬 Live Chat Support</h4>
+                                        <div class="category-stats">
+                                            <span><i class="fas fa-comments"></i> Real-time Chat</span>
+                                            <span><i class="fas fa-brain"></i> Islamic Knowledge AI</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="category-item">
+                                    <div class="category-header">
+                                        <h4>🌙 Islamic Resources</h4>
+                                        <div class="category-stats">
+                                            <span><i class="fas fa-mosque"></i> Authentic Sources</span>
+                                            <span><i class="fas fa-star-and-crescent"></i> Scholarly Guidance</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button class="show-more-btn" onclick="navigation.navigateToSection('chat')">
+                                    <i class="fas fa-arrow-right"></i>
+                                    Start Chatting
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Chat Section -->
+                <section id="chat-section" class="content-section">
+                    <div class="chat-container">
+                        <div class="chat-header">
+                            <h2>🤖 AI Islamic Knowledge Chat</h2>
+                            <div class="chat-status">
+                                <span class="status-indicator" id="chatStatus">Connecting...</span>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="welcome-message">
+                                <div class="welcome-content">
+                                    <i class="fas fa-mosque"></i>
+                                    <h3>Assalamu Alaikum wa Rahmatullahi wa Barakatuh!</h3>
+                                    <p>Welcome to our intelligent Islamic Q&A chat. Ask any question about Islam and receive authentic answers powered by our hybrid AI system combining free AI with comprehensive Islamic knowledge.</p>
+                                    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap;">
+                                        <button class="suggestion-btn" onclick="chat.sendMessage('What are the Five Pillars of Islam?')">
+                                            Five Pillars of Islam
+                                        </button>
+                                        <button class="suggestion-btn" onclick="chat.sendMessage('How to perform prayer?')">
+                                            How to pray
+                                        </button>
+                                        <button class="suggestion-btn" onclick="chat.sendMessage('What is the Shahada?')">
+                                            About Shahada
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-input-container">
+                            <div class="chat-input-wrapper">
+                                <input type="text" id="chatInput" placeholder="Ask your Islamic question..." maxlength="500">
+                                <button id="sendBtn" class="send-btn">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Ask Question Section -->
+                <section id="ask-section" class="content-section">
+                    <div class="ask-container">
+                        <div class="section-header">
+                            <h2>Ask a Question</h2>
+                            <p>Submit your Islamic question and get authentic answers from Islamic scholars.</p>
+                        </div>
+                        
+                        <form id="askQuestionForm" class="ask-form">
+                            <div class="form-group">
+                                <label for="questionTitle">Question Title</label>
+                                <input type="text" id="questionTitle" placeholder="Brief title of your question" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="questionContent">Question Details</label>
+                                <textarea id="questionContent" placeholder="Provide detailed information about your question..." rows="8" required></textarea>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="questionCategory">Category</label>
+                                    <select id="questionCategory">
+                                        <option value="">Select a category</option>
+                                        <option value="faith">Basic Tenets of Faith</option>
+                                        <option value="prayer">Prayer & Worship</option>
+                                        <option value="quran">Quran & its Sciences</option>
+                                        <option value="hadith">Hadith & its Sciences</option>
+                                        <option value="family">Fiqh of the family</option>
+                                        <option value="fiqh">Principles of Fiqh</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="questionLanguage">Language</label>
+                                    <select id="questionLanguage">
+                                        <option value="en">English</option>
+                                        <option value="ar">Arabic</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn-primary submit-btn">
+                                <i class="fas fa-paper-plane"></i>
+                                Submit Question
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Categories Section -->
+                <section id="categories-section" class="content-section">
+                    <div class="content-container">
+                        <div class="section-header">
+                            <h2>Islamic Knowledge Categories</h2>
+                            <p>Browse questions and answers by Islamic topics and categories.</p>
+                        </div>
+                        
+                        <div class="categories-grid">
+                            <div class="category-card" onclick="navigation.navigateToSection('search')">
+                                <div class="category-icon">🕌</div>
+                                <h3>Basic Faith & Beliefs</h3>
+                                <p>Core Islamic beliefs, Tawhid, and fundamental concepts</p>
+                                <span class="category-count">50+ questions</span>
+                            </div>
+                            
+                            <div class="category-card" onclick="navigation.navigateToSection('search')">
+                                <div class="category-icon">🤲</div>
+                                <h3>Prayer & Worship</h3>
+                                <p>Salah, Dua, Dhikr, and other forms of worship</p>
+                                <span class="category-count">80+ questions</span>
+                            </div>
+                            
+                            <div class="category-card" onclick="navigation.navigateToSection('search')">
+                                <div class="category-icon">📖</div>
+                                <h3>Quran & Hadith</h3>
+                                <p>Understanding the Quran and Prophetic traditions</p>
+                                <span class="category-count">60+ questions</span>
+                            </div>
+                            
+                            <div class="category-card" onclick="navigation.navigateToSection('search')">
+                                <div class="category-icon">🌙</div>
+                                <h3>Ramadan & Fasting</h3>
+                                <p>Fasting rules, Ramadan practices, and spiritual benefits</p>
+                                <span class="category-count">40+ questions</span>
+                            </div>
+                            
+                            <div class="category-card" onclick="navigation.navigateToSection('search')">
+                                <div class="category-icon">🕋</div>
+                                <h3>Hajj & Umrah</h3>
+                                <p>Pilgrimage rituals, procedures, and spiritual significance</p>
+                                <span class="category-count">30+ questions</span>
+                            </div>
+                            
+                            <div class="category-card" onclick="navigation.navigateToSection('search')">
+                                <div class="category-icon">👨‍👩‍👧‍👦</div>
+                                <h3>Family & Social Life</h3>
+                                <p>Marriage, parenting, relationships, and social ethics</p>
+                                <span class="category-count">70+ questions</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Recent Q&A Section -->
+                <section id="answers-section" class="content-section">
+                    <div class="content-container">
+                        <div class="section-header">
+                            <h2>Recent Q&A</h2>
+                            <p>Latest questions and answers from our Islamic knowledge community.</p>
+                        </div>
+                        
+                        <div class="answers-list" id="recentAnswersList">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Profile Section -->
+                <section id="profile-section" class="content-section">
+                    <div class="content-container">
+                        <div class="section-header">
+                            <h2>My Profile</h2>
+                            <p>Manage your account and track your Islamic learning journey.</p>
+                        </div>
+                        
+                        <div class="profile-grid">
+                            <div class="profile-card">
+                                <h3>📊 Learning Statistics</h3>
+                                <div class="stat-item">
+                                    <span>Questions Asked:</span>
+                                    <strong>0</strong>
+                                </div>
+                                <div class="stat-item">
+                                    <span>Answers Saved:</span>
+                                    <strong>0</strong>
+                                </div>
+                                <div class="stat-item">
+                                    <span>Chat Sessions:</span>
+                                    <strong>0</strong>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-card">
+                                <h3>🎯 Recent Activity</h3>
+                                <p>No recent activity. Start by asking a question or chatting with our AI!</p>
+                                <button class="btn-primary" onclick="navigation.navigateToSection('chat')">
+                                    Start Learning
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Saved Answers Section -->
+                <section id="saved-section" class="content-section">
+                    <div class="content-container">
+                        <div class="section-header">
+                            <h2>Saved Answers</h2>
+                            <p>Your bookmarked Islamic knowledge for quick reference.</p>
+                        </div>
+                        
+                        <div class="saved-content">
+                            <div class="empty-state">
+                                <i class="fas fa-bookmark" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                                <h3>No saved answers yet</h3>
+                                <p>Start saving useful Islamic knowledge by clicking the bookmark icon on any answer.</p>
+                                <button class="btn-primary" onclick="navigation.navigateToSection('home')">
+                                    Browse Answers
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Search Section -->
+                <section id="search-section" class="content-section">
+                    <div class="search-container-full">
+                        <div class="search-header">
+                            <h2>Search Islamic Knowledge</h2>
+                            <p>Search through our comprehensive database of Islamic Q&A</p>
+                        </div>
+                        
+                        <div class="advanced-search">
+                            <div class="search-input-group">
+                                <input type="text" id="searchInput" placeholder="Search for Islamic questions, topics, or keywords...">
+                                <button id="searchSubmit" class="btn-primary">
+                                    <i class="fas fa-search"></i>
+                                    Search
+                                </button>
+                            </div>
+                            
+                            <div class="search-filters">
+                                <select id="searchCategory">
+                                    <option value="">All Categories</option>
+                                    <option value="faith">Faith</option>
+                                    <option value="prayer">Prayer</option>
+                                    <option value="quran">Quran</option>
+                                    <option value="hadith">Hadith</option>
+                                </select>
+                                
+                                <select id="searchLanguage">
+                                    <option value="auto">Auto-detect</option>
+                                    <option value="en">English</option>
+                                    <option value="ar">Arabic</option>
+                                </select>
+                                
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="useMLSearch" checked>
+                                    <span>Use AI-powered search</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="searchResults" class="search-results">
+                            <!-- Search results will be displayed here -->
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Sign In</h3>
+                <button class="modal-close" id="closeLoginModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="loginUsername">Username or Email</label>
+                    <input type="text" id="loginUsername" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                
+                <button type="submit" class="btn-primary full-width">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Sign In
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>Don't have an account? <a href="#" id="showRegister">Register here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Account</h3>
+                <button class="modal-close" id="closeRegisterModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" id="registerUsername" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" required>
+                </div>
+                
+                <button type="submit" class="btn-primary full-width">
+                    <i class="fas fa-user-plus"></i>
+                    Create Account
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>Already have an account? <a href="#" id="showLogin">Sign in here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+</body>
+</html>
