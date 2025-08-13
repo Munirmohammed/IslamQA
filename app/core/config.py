@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     # External APIs
     OPENAI_API_KEY: Optional[str] = Field(default=None, description="OpenAI API key")
     HUGGINGFACE_API_KEY: Optional[str] = Field(default=None, description="HuggingFace API key")
+    GROQ_API_KEY: Optional[str] = Field(default=None, description="Groq API key")
     
     # Scraping Configuration
     USER_AGENT: str = Field(default="IslamQA-Bot/1.0", description="User agent for scraping")

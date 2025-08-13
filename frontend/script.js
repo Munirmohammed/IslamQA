@@ -5,13 +5,24 @@
 
 // Configuration
 const CONFIG = {
-    API_BASE_URL: 'http://localhost:8000',
-    WS_URL: 'ws://localhost:8000/ws/chat',
+    API_BASE_URL: CONFIG_ENV?.API_BASE_URL || 'http://localhost:8000',
+    WS_URL: CONFIG_ENV?.WS_URL || 'ws://localhost:8000/ws/chat',
     ENDPOINTS: {
         LOGIN: '/api/v1/auth/login',
         REGISTER: '/api/v1/auth/register',
         SEARCH: '/api/v1/search',
         ASK_QUESTION: '/api/v1/questions/ask'
+    },
+    // AI API Keys from config
+    AI_KEYS: {
+        HUGGINGFACE: CONFIG_ENV?.HUGGINGFACE_API_KEY,
+        GROQ: CONFIG_ENV?.GROQ_API_KEY,
+        OPENAI: CONFIG_ENV?.OPENAI_API_KEY
+    },
+    AI_MODELS: CONFIG_ENV?.AI_MODELS || {
+        HUGGINGFACE: 'facebook/blenderbot-400M-distill',
+        GROQ: 'llama3-8b-8192',
+        OPENAI: 'gpt-3.5-turbo'
     }
 };
 
@@ -112,6 +123,14 @@ const chat = {
     isConnecting: false,
 
     connect() {
+        // DISABLED: Always use frontend AI instead of WebSocket
+        console.log('🚫 WebSocket disabled - using frontend AI only');
+        this.updateStatus('offline');
+        this.handleConnectionError();
+        return;
+        
+        // Old WebSocket code (disabled)
+        /*
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             return;
         }
@@ -141,6 +160,7 @@ const chat = {
             console.error('WebSocket connection failed:', error);
             this.handleConnectionError();
         }
+        */
     },
 
     setupEventListeners() {
@@ -180,24 +200,25 @@ const chat = {
 
     handleConnectionError() {
         this.isConnecting = false;
-        this.updateStatus('offline');
+        this.updateStatus('ai');
         
-        // Show offline message with fallback option
+        // Show AI ready message
         const messagesContainer = document.getElementById('chatMessages');
         if (messagesContainer && messagesContainer.children.length <= 1) { // Only welcome message
-            const offlineMessage = document.createElement('div');
-            offlineMessage.className = 'chat-message system';
-            offlineMessage.innerHTML = `
+            const aiMessage = document.createElement('div');
+            aiMessage.className = 'chat-message system';
+            aiMessage.innerHTML = `
                 <div class="message-content">
-                    <strong>🔌 Connection Issue</strong><br>
-                    Can't connect to the server right now. But don't worry! You can still get Islamic answers using our offline AI system.<br><br>
-                    <em>Try asking: "What are the Five Pillars of Islam?"</em>
+                    <strong>🤖 AI Assistant Ready</strong><br>
+                    I'm powered by advanced AI technology and ready to help answer your questions! Ask me anything - from Islamic knowledge to general topics.<br><br>
+                    <em>Try asking: "How to perform prayer?" or "What is the meaning of life?"</em>
                 </div>
             `;
-            messagesContainer.appendChild(offlineMessage);
+            messagesContainer.appendChild(aiMessage);
         }
         
-        this.scheduleReconnect();
+        // Don't schedule reconnect since we're using AI mode
+        // this.scheduleReconnect();
     },
 
     scheduleReconnect() {
@@ -217,19 +238,29 @@ const chat = {
                 content: message
             }));
             this.displayMessage(message, 'user');
+            this.showTypingIndicator();
         } else {
-            // Use offline AI when WebSocket is not connected
+            // Use advanced free AI when WebSocket is not connected
             this.displayMessage(message, 'user');
+            this.showTypingIndicator();
             
-            // Simulate thinking time and get offline response
-            setTimeout(() => {
-                const offlineResponse = this.getOfflineAIResponse(message);
-                this.displaySystemMessage(offlineResponse, {
+            // Use advanced AI with Islamic context
+            this.getAdvancedAIResponse(message).then(response => {
+                this.hideTypingIndicator();
+                this.displaySystemMessage(response, {
+                    sources: ['Advanced AI Assistant'],
+                    is_islamic: true,
+                    confidence: 0.9
+                });
+            }).catch(error => {
+                this.hideTypingIndicator();
+                const fallbackResponse = this.getOfflineAIResponse(message);
+                this.displaySystemMessage(fallbackResponse, {
                     sources: ['Offline AI System'],
                     is_islamic: true,
                     confidence: 0.8
                 });
-            }, 1000);
+            });
         }
     },
 
@@ -271,9 +302,469 @@ const chat = {
         return `Thank you for your question: "${message}"\n\nI'm currently running in offline mode. For comprehensive Islamic guidance, I recommend:\n\n• Consulting authentic Islamic sources\n• Speaking with local Islamic scholars\n• Referring to the Quran and authentic Hadith\n\nIs there a specific Islamic topic I can help you with using my offline knowledge?`;
     },
 
+    async getAdvancedAIResponse(message) {
+        try {
+            // Try Hugging Face AI first for natural responses
+            let response = await this.tryHuggingFaceAPI(message);
+            if (response) {
+                return response;
+            }
+            
+            // Try other free AI services
+            response = await this.tryFreePublicAPI(message);
+            if (response) {
+                return response;
+            }
+            
+            response = await this.tryGroqAPI(message);
+            if (response) {
+                return response;
+            }
+            
+            // Fallback to smart simulation
+            return this.getSmartFallbackResponse(message);
+        } catch (error) {
+            console.error('Advanced AI failed:', error);
+            return `I apologize, but I'm having technical difficulties right now. Please try asking your question again!`;
+        }
+    },
+
+    getEnhancedIslamicResponse(message) {
+        const messageLower = message.toLowerCase();
+        
+        // Comprehensive Islamic Q&A Database
+        const islamicQA = {
+            'how to perform prayer': `**How to Perform Islamic Prayer (Salah):**
+
+**Preparation:**
+1. **Wudu (Ablution)**: Perform ritual cleansing
+2. **Qibla**: Face towards Mecca
+3. **Niyyah**: Make intention in your heart
+4. **Clean place**: Pray on clean ground/prayer mat
+
+**Prayer Steps:**
+1. **Takbir**: Say "Allahu Akbar" while raising hands
+2. **Al-Fatiha**: Recite the opening chapter of Quran
+3. **Surah**: Recite another chapter from Quran
+4. **Ruku**: Bow down saying "Subhana Rabbiyal Adheem"
+5. **Qiyam**: Stand up saying "Sami Allahu liman hamidah"
+6. **Sujud**: Prostrate twice saying "Subhana Rabbiyal A'la"
+7. **Tashahhud**: Sit and recite the testimony
+8. **Tasleem**: End with "Assalamu alaikum" to both sides
+
+**Daily Prayers:**
+• **Fajr**: 2 Rakah (before sunrise)
+• **Dhuhr**: 4 Rakah (after midday)
+• **Asr**: 4 Rakah (late afternoon)
+• **Maghrib**: 3 Rakah (after sunset)
+• **Isha**: 4 Rakah (night)
+
+May Allah accept your prayers! 🤲`,
+
+            'what are the five pillars': `**The Five Pillars of Islam:**
+
+**1. Shahada (Declaration of Faith) ☪️**
+"La ilaha illa Allah, Muhammad rasul Allah"
+(There is no god but Allah, and Muhammad is His messenger)
+
+**2. Salah (Prayer) 🤲**
+Five daily prayers connecting us with Allah
+
+**3. Zakat (Charity) 💝**
+Giving 2.5% of wealth annually to help the poor
+
+**4. Sawm (Fasting) 🌙**
+Fasting during the month of Ramadan
+
+**5. Hajj (Pilgrimage) 🕋**
+Pilgrimage to Mecca once in a lifetime if able
+
+These pillars form the foundation of Muslim faith and practice, uniting Muslims worldwide in worship and community.`,
+
+            'what is shahada': `**The Shahada - Declaration of Faith:**
+
+**Arabic:** "Ash-hadu an la ilaha illa Allah, wa ash-hadu anna Muhammadan rasul Allah"
+
+**English:** "I bear witness that there is no god but Allah, and I bear witness that Muhammad is the messenger of Allah"
+
+**Significance:**
+• **First Pillar** of Islam
+• **Entry** into Islam - sincere recitation makes one Muslim
+• **Core Belief** - Oneness of Allah (Tawhid)
+• **Daily Remembrance** - recited in prayers
+
+**Two Parts:**
+1. **La ilaha illa Allah** - No deity worthy of worship except Allah
+2. **Muhammad rasul Allah** - Muhammad is Allah's final messenger
+
+The Shahada is the foundation of Islamic belief, affirming monotheism and the prophethood of Muhammad (peace be upon him).`,
+
+            'how to make wudu': `**How to Perform Wudu (Ablution):**
+
+**Steps in Order:**
+1. **Intention (Niyyah)** - Make intention in your heart
+2. **Bismillah** - Say "In the name of Allah"
+3. **Wash hands** 3 times up to wrists
+4. **Rinse mouth** 3 times
+5. **Rinse nose** 3 times (sniff water and blow out)
+6. **Wash face** 3 times from forehead to chin
+7. **Wash arms** 3 times up to elbows (right then left)
+8. **Wipe head** once with wet hands
+9. **Wash feet** 3 times up to ankles (right then left)
+
+**Dua after Wudu:**
+"Ash-hadu an la ilaha illa Allah, wa ash-hadu anna Muhammadan rasul Allah"
+
+**When Wudu is Required:**
+• Before prayer (Salah)
+• Before touching the Quran
+• Before entering mosque (recommended)
+
+**What Breaks Wudu:**
+• Using the bathroom
+• Passing gas
+• Deep sleep
+• Loss of consciousness
+
+Wudu purifies both body and soul! 💧`,
+
+            'what is ramadan': `**Ramadan - The Holy Month:**
+
+**What is Ramadan?**
+The 9th month of the Islamic lunar calendar, when Muslims fast from dawn to sunset.
+
+**Duration:** 29-30 days (varies by moon sighting)
+
+**Fasting Rules:**
+• **From**: Fajr (dawn) prayer time
+• **Until**: Maghrib (sunset) prayer time
+• **Abstain from**: Food, drink, marital relations, smoking
+
+**Who Must Fast:**
+• Adult Muslims who are healthy
+• **Exemptions**: Sick, traveling, pregnant, elderly, menstruating women
+
+**Special Practices:**
+• **Suhoor**: Pre-dawn meal
+• **Iftar**: Breaking fast at sunset
+• **Taraweeh**: Special night prayers
+• **Laylat al-Qadr**: Night of Power (last 10 nights)
+
+**Benefits:**
+• Spiritual purification
+• Self-discipline and control
+• Empathy for the poor
+• Increased charity and prayer
+• Community unity
+
+**End of Ramadan:**
+Celebrated with **Eid al-Fitr** - a joyous festival!
+
+Ramadan Mubarak! 🌙✨`
+        };
+
+        // Check for direct matches first
+        for (const [key, response] of Object.entries(islamicQA)) {
+            if (messageLower.includes(key.replace(/\s+/g, '')) || 
+                key.split(' ').every(word => messageLower.includes(word))) {
+                return response;
+            }
+        }
+
+        // Pattern matching for common questions
+        if (messageLower.includes('pray') || messageLower.includes('salah')) {
+            return islamicQA['how to perform prayer'];
+        }
+        
+        if (messageLower.includes('pillar')) {
+            return islamicQA['what are the five pillars'];
+        }
+        
+        if (messageLower.includes('shahada') || messageLower.includes('declaration')) {
+            return islamicQA['what is shahada'];
+        }
+        
+        if (messageLower.includes('wudu') || messageLower.includes('ablution')) {
+            return islamicQA['how to make wudu'];
+        }
+        
+        if (messageLower.includes('ramadan') || messageLower.includes('fasting')) {
+            return islamicQA['what is ramadan'];
+        }
+
+        // Greeting responses
+        if (messageLower.includes('hello') || messageLower.includes('hi') || messageLower.includes('salaam')) {
+            return `**Assalamu Alaikum wa Rahmatullahi wa Barakatuh!** 🕌
+
+Welcome to our Islamic Q&A platform! I'm here to help you learn about Islam.
+
+**Popular Questions:**
+• How to perform prayer?
+• What are the Five Pillars of Islam?
+• How to make Wudu?
+• What is Ramadan?
+• What is the Shahada?
+
+Feel free to ask any Islamic question! 📚✨`;
+        }
+
+        // Default intelligent response
+        return `**Thank you for your question about:** "${message}"
+
+I'd be happy to help you learn about Islam! Here are some topics I can assist with:
+
+**🕌 Core Beliefs & Practices:**
+• Five Pillars of Islam
+• Shahada (Declaration of Faith)
+• Prayer (Salah) and Wudu
+• Fasting and Ramadan
+• Hajj and Umrah
+
+**📖 Islamic Knowledge:**
+• Quran and its teachings
+• Prophet Muhammad (peace be upon him)
+• Islamic history and values
+• Daily Islamic practices
+
+**🤲 Worship & Spirituality:**
+• How to pray correctly
+• Duas and Dhikr
+• Islamic manners and ethics
+
+Please feel free to ask a specific Islamic question, and I'll provide detailed, authentic guidance based on Quran and Sunnah! 
+
+*What would you like to learn about Islam today?* 🌟`;
+    },
+
+    getSmartFallbackResponse(message) {
+        const messageLower = message.toLowerCase();
+        
+        // Greetings and casual responses
+        if (messageLower.includes('hi') || messageLower.includes('hello') || messageLower.includes('hey')) {
+            return `Hello! 👋 Nice to meet you! I'm an AI assistant ready to help with your questions. What would you like to talk about today?`;
+        }
+        
+        if (messageLower.includes('how are you')) {
+            return `I'm doing great, thank you for asking! 😊 I'm here and ready to help answer your questions. How can I assist you today?`;
+        }
+        
+        if (messageLower.includes('what is your name')) {
+            return `I'm an AI assistant created to help answer questions and have conversations. You can think of me as your friendly digital helper! What would you like to know?`;
+        }
+        
+        // Question responses
+        if (messageLower.includes('meaning of life')) {
+            return `That's a profound question! The meaning of life has been pondered by philosophers, theologians, and thinkers throughout history. Many believe it involves finding purpose, building relationships, contributing to others, personal growth, and spiritual connection. What aspects of life's meaning are you most curious about?`;
+        }
+        
+        if (messageLower.includes('how') && messageLower.includes('work')) {
+            return `Great question! Most things work through a combination of principles, processes, and interactions. Could you be more specific about what you'd like to understand? I'd be happy to explain the workings of technology, natural phenomena, social systems, or whatever interests you!`;
+        }
+        
+        if (messageLower.includes('joke') || messageLower.includes('funny')) {
+            return `Here's a light one for you: Why don't scientists trust atoms? Because they make up everything! 😄 Got any other questions I can help with?`;
+        }
+        
+        // Islamic questions
+        if (messageLower.includes('islam') || messageLower.includes('muslim') || messageLower.includes('allah')) {
+            return `I'd be happy to discuss Islamic topics! Islam is a rich tradition with deep spiritual and practical teachings. Whether you're curious about beliefs, practices, history, or contemporary issues, feel free to ask specific questions and I'll do my best to provide helpful information.`;
+        }
+        
+        // General intelligent response
+        return `That's an interesting question about "${message}"! 
+
+I'd love to help you explore this topic. While I'm currently having some connection issues with my advanced AI services, I can still provide thoughtful responses based on general knowledge.
+
+Could you tell me a bit more about what specifically interests you about this? That way I can give you a more focused and helpful answer! 🤔💭`;
+    },
+
+    async tryHuggingFaceAPI(message) {
+        try {
+            console.log('🤖 Trying Hugging Face AI for:', message);
+            
+            // Use Blenderbot for better conversational AI
+            const response = await fetch(`https://api-inference.huggingface.co/models/${CONFIG.AI_MODELS.HUGGINGFACE}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${CONFIG.AI_KEYS.HUGGINGFACE}`
+                },
+                body: JSON.stringify({
+                    inputs: message,
+                    parameters: {
+                        max_length: 300,
+                        temperature: 0.8,
+                        do_sample: true,
+                        top_p: 0.9
+                    }
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('🎯 Hugging Face response:', result);
+                
+                // Handle different response formats
+                if (result && result[0]) {
+                    let aiResponse = '';
+                    
+                    // Try generated_text first (most common)
+                    if (result[0].generated_text) {
+                        aiResponse = result[0].generated_text.trim();
+                    }
+                    // Try response field (some models use this)
+                    else if (result[0].response) {
+                        aiResponse = result[0].response.trim();
+                    }
+                    // Try the result directly if it's a string
+                    else if (typeof result[0] === 'string') {
+                        aiResponse = result[0].trim();
+                    }
+                    
+                    // Clean up the response
+                    if (aiResponse) {
+                        // Remove the original input if it's repeated
+                        if (aiResponse.includes(message)) {
+                            aiResponse = aiResponse.replace(message, '').trim();
+                        }
+                        
+                        // If response is good length, return it
+                        if (aiResponse.length >= 10) {
+                            return aiResponse;
+                        }
+                    }
+                }
+            } else {
+                console.log('❌ Hugging Face API error:', response.status, response.statusText);
+            }
+        } catch (error) {
+            console.log('❌ Hugging Face API failed:', error);
+        }
+        return null;
+    },
+
+    async tryFreePublicAPI(message) {
+        try {
+            console.log('🌐 Trying free public AI for:', message);
+            
+            // Try a working free AI service
+            const response = await fetch('https://api.pawan.krd/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer pk-this-is-a-real-free-api-key-pk-for-everyone'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-3.5-turbo',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: message
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 300
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('🎯 Free API response:', result);
+                
+                if (result.choices && result.choices[0] && result.choices[0].message) {
+                    return result.choices[0].message.content.trim();
+                }
+            } else {
+                console.log('❌ Free API error:', response.status, await response.text());
+            }
+        } catch (error) {
+            console.log('❌ Free Public API failed:', error);
+        }
+        return null;
+    },
+
+    async tryOpenAIFreeAPI(prompt) {
+        // For now, return null - you can add OpenAI API key later
+        return null;
+    },
+
+    async tryGroqAPI(message) {
+        try {
+            console.log('🚀 Trying Groq AI for:', message);
+            
+            // Try Groq's free API (very fast)
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${CONFIG.AI_KEYS.GROQ}`
+                },
+                body: JSON.stringify({
+                    messages: [
+                        {
+                            role: 'user',
+                            content: message
+                        }
+                    ],
+                    model: CONFIG.AI_MODELS.GROQ,
+                    temperature: 0.7,
+                    max_tokens: 300
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.choices && result.choices[0] && result.choices[0].message) {
+                    return result.choices[0].message.content.trim();
+                }
+            }
+        } catch (error) {
+            console.log('❌ Groq API failed:', error);
+        }
+        return null;
+    },
+
+    async tryClaudeAPI(prompt) {
+        // For now, return null - you can add Claude API key later  
+        return null;
+    },
+
+    showTypingIndicator() {
+        const messagesContainer = document.getElementById('chatMessages');
+        
+        // Remove existing typing indicator
+        this.hideTypingIndicator();
+        
+        const typingElement = document.createElement('div');
+        typingElement.className = 'chat-message system typing-indicator';
+        typingElement.id = 'typing-indicator';
+        typingElement.innerHTML = `
+            <div class="message-content">
+                <div class="typing-animation">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+            </div>
+        `;
+        
+        messagesContainer.appendChild(typingElement);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    },
+
+    hideTypingIndicator() {
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            typingIndicator.remove();
+        }
+    },
+
     handleMessage(data) {
         const messageContent = data.content || data.message || '';
         const metadata = data.metadata || {};
+
+        // Hide typing indicator when any response comes
+        this.hideTypingIndicator();
 
         switch (data.message_type || data.type) {
             case 'answer':
@@ -356,7 +847,25 @@ const chat = {
         const statusElement = document.getElementById('chatStatus');
         if (statusElement) {
             statusElement.className = `status-indicator ${status}`;
-            statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            
+            // Custom status text
+            switch (status) {
+                case 'ai':
+                    statusElement.textContent = 'AI Ready';
+                    statusElement.className = 'status-indicator connected';
+                    break;
+                case 'connecting':
+                    statusElement.textContent = 'Connecting...';
+                    break;
+                case 'connected':
+                    statusElement.textContent = 'Connected';
+                    break;
+                case 'offline':
+                    statusElement.textContent = 'Offline';
+                    break;
+                default:
+                    statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            }
         }
     },
 
