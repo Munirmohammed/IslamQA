@@ -582,6 +582,12 @@ Could you tell me a bit more about what specifically interests you about this? T
         try {
             console.log('🤖 Trying Hugging Face AI for:', message);
             
+            // Check if API key is available
+            if (!CONFIG.AI_KEYS.HUGGINGFACE) {
+                console.log('❌ Hugging Face API key not available');
+                return null;
+            }
+            
             // Use Blenderbot for better conversational AI
             const response = await fetch(`https://api-inference.huggingface.co/models/${CONFIG.AI_MODELS.HUGGINGFACE}`, {
                 method: 'POST',
@@ -691,6 +697,12 @@ Could you tell me a bit more about what specifically interests you about this? T
     async tryGroqAPI(message) {
         try {
             console.log('🚀 Trying Groq AI for:', message);
+            
+            // Check if API key is available
+            if (!CONFIG.AI_KEYS.GROQ) {
+                console.log('❌ Groq API key not available');
+                return null;
+            }
             
             // Try Groq's free API (very fast)
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
