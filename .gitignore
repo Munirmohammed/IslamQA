@@ -179,5 +179,9 @@ test.db
 # Secrets and config
 .env.*
 !.env.template
-config.env
+config.env.local
 secrets/
+
+# Frontend local config with API keys
+frontend/config.local.js
+frontend/.env.local
