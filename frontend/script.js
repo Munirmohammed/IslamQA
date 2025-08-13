@@ -122,10 +122,21 @@ const chat = {
 
         this.isConnecting = true;
         this.updateStatus('connecting');
+        console.log('Attempting to connect to:', CONFIG.WS_URL);
 
         try {
             this.socket = new WebSocket(CONFIG.WS_URL);
             this.setupEventListeners();
+            
+            // Add timeout for connection attempt
+            setTimeout(() => {
+                if (this.socket && this.socket.readyState === WebSocket.CONNECTING) {
+                    console.warn('WebSocket connection timeout');
+                    this.socket.close();
+                    this.handleConnectionError();
+                }
+            }, 10000); // 10 second timeout
+            
         } catch (error) {
             console.error('WebSocket connection failed:', error);
             this.handleConnectionError();
@@ -169,7 +180,23 @@ const chat = {
 
     handleConnectionError() {
         this.isConnecting = false;
-        this.updateStatus('disconnected');
+        this.updateStatus('offline');
+        
+        // Show offline message with fallback option
+        const messagesContainer = document.getElementById('chatMessages');
+        if (messagesContainer && messagesContainer.children.length <= 1) { // Only welcome message
+            const offlineMessage = document.createElement('div');
+            offlineMessage.className = 'chat-message system';
+            offlineMessage.innerHTML = `
+                <div class="message-content">
+                    <strong>🔌 Connection Issue</strong><br>
+                    Can't connect to the server right now. But don't worry! You can still get Islamic answers using our offline AI system.<br><br>
+                    <em>Try asking: "What are the Five Pillars of Islam?"</em>
+                </div>
+            `;
+            messagesContainer.appendChild(offlineMessage);
+        }
+        
         this.scheduleReconnect();
     },
 
@@ -191,8 +218,57 @@ const chat = {
             }));
             this.displayMessage(message, 'user');
         } else {
-            showToast('Chat is not connected. Please wait...', 'warning');
+            // Use offline AI when WebSocket is not connected
+            this.displayMessage(message, 'user');
+            
+            // Simulate thinking time and get offline response
+            setTimeout(() => {
+                const offlineResponse = this.getOfflineAIResponse(message);
+                this.displaySystemMessage(offlineResponse, {
+                    sources: ['Offline AI System'],
+                    is_islamic: true,
+                    confidence: 0.8
+                });
+            }, 1000);
         }
+    },
+
+    getOfflineAIResponse(message) {
+        const messageLower = message.toLowerCase();
+        
+        // Enhanced Islamic knowledge responses for offline mode
+        const islamicResponses = {
+            'five pillars': 'The Five Pillars of Islam are:\n\n1. **Shahada** - Declaration of faith: "La ilaha illa Allah, Muhammad rasul Allah"\n2. **Salah** - Five daily prayers\n3. **Zakat** - Charity (2.5% of wealth annually)\n4. **Sawm** - Fasting during Ramadan\n5. **Hajj** - Pilgrimage to Mecca\n\nThese pillars form the foundation of Muslim practice and faith.',
+            
+            'prayer': 'Islamic prayer (Salah) is performed 5 times daily:\n\n• **Fajr** - Before sunrise\n• **Dhuhr** - After midday\n• **Asr** - Late afternoon\n• **Maghrib** - Just after sunset\n• **Isha** - Night prayer\n\nEach prayer involves ritual purification (Wudu), facing Mecca (Qibla), and reciting verses from the Quran.',
+            
+            'shahada': 'The Shahada is the Islamic declaration of faith:\n\n**Arabic:** "Ash-hadu an la ilaha illa Allah, wa ash-hadu anna Muhammadan rasul Allah"\n\n**English:** "I bear witness that there is no god but Allah, and I bear witness that Muhammad is the messenger of Allah"\n\nReciting the Shahada with sincere belief makes one a Muslim.',
+            
+            'wudu': 'Wudu (ablution) is performed before prayer:\n\n1. Make intention and say "Bismillah"\n2. Wash hands 3 times\n3. Rinse mouth 3 times\n4. Rinse nose 3 times\n5. Wash face 3 times\n6. Wash arms to elbows 3 times\n7. Wipe head once\n8. Wash feet to ankles 3 times\n\nWudu purifies the body and soul before standing before Allah.',
+            
+            'ramadan': 'Ramadan is the holy month of fasting:\n\n• **Duration:** 9th month of Islamic calendar (29-30 days)\n• **Fasting:** From dawn (Fajr) to sunset (Maghrib)\n• **Purpose:** Spiritual purification, self-control, empathy for the poor\n• **Benefits:** Increased devotion, community unity, charity\n• **Eid:** Celebrated at the end with Eid al-Fitr',
+            
+            'quran': 'The Quran is Allah\'s final revelation:\n\n• **Revealed to:** Prophet Muhammad (peace be upon him)\n• **Language:** Arabic\n• **Structure:** 114 chapters (Surahs), 6,236 verses (Ayahs)\n• **Purpose:** Guidance for all humanity\n• **Preservation:** Memorized by millions, unchanged since revelation\n\nThe Quran is the primary source of Islamic teachings and law.',
+        };
+        
+        // Check for keywords and return appropriate response
+        for (const [keyword, response] of Object.entries(islamicResponses)) {
+            if (messageLower.includes(keyword)) {
+                return response;
+            }
+        }
+        
+        // Handle question patterns
+        if (messageLower.includes('how') && messageLower.includes('pray')) {
+            return islamicResponses['prayer'];
+        }
+        
+        if (messageLower.includes('what') && messageLower.includes('islam')) {
+            return 'Islam is the religion of peace and submission to Allah. It\'s based on five pillars, belief in one God (Allah), Prophet Muhammad as His final messenger, and following the Quran and Sunnah for guidance in all aspects of life.';
+        }
+        
+        // Default response
+        return `Thank you for your question: "${message}"\n\nI'm currently running in offline mode. For comprehensive Islamic guidance, I recommend:\n\n• Consulting authentic Islamic sources\n• Speaking with local Islamic scholars\n• Referring to the Quran and authentic Hadith\n\nIs there a specific Islamic topic I can help you with using my offline knowledge?`;
     },
 
     handleMessage(data) {
@@ -324,9 +400,14 @@ const navigation = {
         this.currentSection = sectionName;
 
         // Section-specific actions
-        if (sectionName === 'ask') {
+        if (sectionName === 'ask' || sectionName === 'chat') {
+            // Show chat section for both 'ask' and 'chat' navigation
             document.getElementById('chat-section').classList.add('active');
-            chat.connect();
+            
+            // Auto-connect to chat
+            setTimeout(() => {
+                chat.connect();
+            }, 500);
         }
     },
 
