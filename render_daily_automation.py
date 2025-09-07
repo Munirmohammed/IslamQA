@@ -17,16 +17,14 @@ logger = structlog.get_logger()
 
 def main():
     from datetime import datetime
-    os.makedirs('data', exist_ok=True)
 
-    # Update all automation files before a single commit
-    # 1. Heartbeat file
-    heartbeat_file = 'data/automation_heartbeat.txt'
-    with open(heartbeat_file, 'w', encoding='utf-8') as f:
-        f.write(f'Automation heartbeat: {datetime.now().isoformat()}\n')
 
-    # 2. Version bump
-    version_file = 'VERSION.txt'
+    # 1. Heartbeat file (always changes)
+    with open('data/automation_heartbeat.txt', 'w', encoding='utf-8') as f:
+        f.write(f'Heartbeat: {datetime.now().isoformat()}\n')
+
+    # 2. Version file (always increments)
+    version_file = 'data/automation_version.txt'
     if os.path.exists(version_file):
         with open(version_file, 'r+') as f:
             try:
@@ -41,8 +39,30 @@ def main():
         with open(version_file, 'w') as f:
             f.write('1\n')
 
-    # 3. Prayer times, random, stats, last_run
-    subprocess.run([sys.executable, "scripts/update_prayer_times.py"], check=True)
+    # 3. Prayer times file (always changes)
+    with open('data/automation_prayertimes.txt', 'w', encoding='utf-8') as f:
+        f.write(f'Prayer times updated at: {datetime.now().isoformat()}\n')
+
+    # 4. Random file (always changes)
+    import random
+    with open('data/automation_random.txt', 'w', encoding='utf-8') as f:
+        f.write(f'Random value: {random.randint(100000, 999999)}\nTimestamp: {datetime.now().isoformat()}\n')
+
+    # 5. Stats file (always changes)
+    import json
+    stats_file = 'data/automation_stats.json'
+    try:
+        with open(stats_file, 'r', encoding='utf-8') as f:
+            stats = json.load(f)
+    except Exception:
+        stats = {"runs": []}
+    stats["runs"].append({"timestamp": datetime.now().isoformat()})
+    with open(stats_file, 'w', encoding='utf-8') as f:
+        json.dump(stats, f, ensure_ascii=False, indent=2)
+
+    # 6. Last run file (always changes)
+    with open('data/automation_lastrun.txt', 'w', encoding='utf-8') as f:
+        f.write(f'Last run: {datetime.now().isoformat()}\n')
 
     # 4. Stage and commit all changes
     github = GitHubAutomation()
