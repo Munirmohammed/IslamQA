@@ -18,14 +18,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install minimal dependencies for prayer times
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run main automation script
-        run: |
-          python render_daily_automation.py
+          pip install requests
 
       - name: Update prayer times
         run: |
