@@ -29,3 +29,18 @@ jobs:
       - name: Update prayer times
         run: |
           python scripts/update_prayer_times.py
+
+      - name: Send email notification
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: 'IslamQA Automation Run: ${{ job.status }}'
+          to: munirmohammed038@gmail.com
+          from: ${{ secrets.GMAIL_USERNAME }}
+          body: |
+            The automation workflow has completed with status: ${{ job.status }}.
+            See details at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
