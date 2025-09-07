@@ -131,6 +131,12 @@ dmypy.json
 
 # Project specific
 data/
+!data/automation_heartbeat.txt
+!data/automation_lastrun.txt
+!data/automation_prayertimes.txt
+!data/automation_random.txt
+!data/automation_stats.json
+!data/automation_version.txt
 logs/
 backups/
 temp/
