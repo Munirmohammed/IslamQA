@@ -18,7 +18,7 @@ jobs:
           python-version: '3.11'
 
 
-      - name: Install dependencies for prayer times and file updates
+      - name: Install dependencies for prayer times and file updates aiohttp
         run: |
           pip install requests schedule structlog pydantic-settings celery
 
