@@ -38,11 +38,11 @@ def main():
             f.write('1\n')
 
     update_tasks = [
-        (lambda: scrape_islamqa(5), "Scraped new Q&A from IslamQA.info"),
-        (lambda: scrape_dar_al_ifta(5), "Scraped new Q&A from Dar al-Ifta"),
-        (lambda: rebuild_faiss_index(True), "Rebuilt FAISS ML index"),
-        (lambda: cleanup_old_data(), "Cleaned up old data in DB"),
-        (lambda: update_development_stats(), "Updated development stats/analytics"),
+        # (lambda: scrape_islamqa(5), "Scraped new Q&A from IslamQA.info"),
+        # (lambda: scrape_dar_al_ifta(5), "Scraped new Q&A from Dar al-Ifta"),
+        # (lambda: rebuild_faiss_index(True), "Rebuilt FAISS ML index"),
+        # (lambda: cleanup_old_data(), "Cleaned up old data in DB"),
+        # (lambda: update_development_stats(), "Updated development stats/analytics"),
         # Prayer times update
         (lambda: subprocess.run([sys.executable, "scripts/update_prayer_times.py"], check=True), "Updated daily prayer times"),
     ]
