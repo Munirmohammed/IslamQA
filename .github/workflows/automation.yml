@@ -20,7 +20,7 @@ jobs:
 
       - name: Install minimal dependencies for render automation
         run: |
-          pip install fastapi uvicorn pydantic pydantic-settings email-validator python-dotenv python-multipart sqlalchemy alembic psycopg2-binary redis requests beautifulsoup4 scrapy selenium pandas numpy transformers sentence-transformers nltk spacy scikit-learn torch faiss-cpu pyarabic arabic-reshaper python-bidi python-jose[cryptography] passlib[bcrypt] bcrypt websockets aioredis celery prometheus-client structlog python-slugify dateparser schedule
+          pip install fastapi uvicorn pydantic pydantic-settings email-validator python-dotenv python-multipart sqlalchemy alembic psycopg2-binary redis requests beautifulsoup4 scrapy selenium pandas numpy transformers sentence-transformers nltk spacy scikit-learn torch faiss-cpu pyarabic arabic-reshaper python-bidi python-jose[cryptography] passlib[bcrypt] bcrypt websockets aioredis celery prometheus-client structlog python-slugify dateparser schedule aiohttp
 
       - name: Ensure data directory exists
         run: |
