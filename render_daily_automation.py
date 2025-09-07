@@ -18,7 +18,25 @@ logger = structlog.get_logger()
 def main():
     # Ensure data directory exists for all tasks that may write to it
     os.makedirs('data', exist_ok=True)
+
     github = GitHubAutomation()
+
+    # Bump version in VERSION.txt
+    version_file = 'VERSION.txt'
+    if os.path.exists(version_file):
+        with open(version_file, 'r+') as f:
+            try:
+                version = int(f.read().strip())
+            except Exception:
+                version = 0
+            version += 1
+            f.seek(0)
+            f.write(str(version) + '\n')
+            f.truncate()
+    else:
+        with open(version_file, 'w') as f:
+            f.write('1\n')
+
     update_tasks = [
         (lambda: scrape_islamqa(5), "Scraped new Q&A from IslamQA.info"),
         (lambda: scrape_dar_al_ifta(5), "Scraped new Q&A from Dar al-Ifta"),
