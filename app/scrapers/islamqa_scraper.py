@@ -19,62 +19,32 @@ class IslamQAScraper(BaseScraper):
             source_name="IslamQA.info",
             base_url="https://islamqa.info"
         )
-        self.categories = [
-            "aqeedah-and-islamic-belief",
-            "worship",
-            "jurisprudence-and-islamic-rulings", 
-            "muslim-character-and-behaviour",
-            "calling-others-to-islam",
-            "knowledge",
-            "contemporary-issues"
-        ]
+        # Use topic IDs as per the new URL structure
+        self.topic_ids = [55, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54]  # Add more as needed
     
     async def get_question_urls(self) -> List[str]:
-        """Get question URLs from IslamQA"""
+        """Get question URLs from IslamQA using topic IDs"""
         urls = []
-        
-        # Get URLs from each category
-        for category in self.categories:
-            category_urls = await self._get_category_urls(category)
+        for topic_id in self.topic_ids:
+            category_urls = await self._get_category_urls(topic_id)
             urls.extend(category_urls)
-            
-            # Small delay between categories
             await asyncio.sleep(1)
-        
-        return list(set(urls))  # Remove duplicates
+        return list(set(urls))
     
-    async def _get_category_urls(self, category: str, max_pages: int = 50) -> List[str]:
-        """Get question URLs from a specific category"""
+    async def _get_category_urls(self, topic_id: int) -> List[str]:
+        """Get question URLs from a specific topic/category by ID (no pagination)"""
         urls = []
-        
-        for page in range(1, max_pages + 1):
-            category_url = f"{self.base_url}/en/categories/{category}?page={page}"
-            
-            html = await self.fetch_page(category_url)
-            if not html:
-                break
-            
-            soup = self.parse_html(html)
-            
-            # Find question links
-            question_links = soup.find_all('a', href=re.compile(r'/en/answers/\d+'))
-            
-            if not question_links:
-                break  # No more questions on this page
-            
-            page_urls = []
-            for link in question_links:
-                href = link.get('href')
-                if href:
-                    full_url = urljoin(self.base_url, href)
-                    page_urls.append(full_url)
-            
-            urls.extend(page_urls)
-            
-            # Break if we found fewer questions than expected (likely last page)
-            if len(page_urls) < 10:
-                break
-        
+        category_url = f"{self.base_url}/en/categories/topics/{topic_id}"
+        html = await self.fetch_page(category_url)
+        if not html:
+            return urls
+        soup = self.parse_html(html)
+        question_links = soup.find_all('a', href=re.compile(r'/en/answers/\d+'))
+        for link in question_links:
+            href = link.get('href')
+            if href:
+                full_url = urljoin(self.base_url, href)
+                urls.append(full_url)
         return urls
     
     async def scrape_question_answer(self, url: str) -> Optional[QuestionAnswer]:
