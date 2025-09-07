@@ -16,6 +16,11 @@ import os
 logger = structlog.get_logger()
 
 def main():
+    # Always update a heartbeat file to guarantee a commit
+    heartbeat_file = 'data/automation_heartbeat.txt'
+    with open(heartbeat_file, 'w', encoding='utf-8') as f:
+        from datetime import datetime
+        f.write(f'Automation heartbeat: {datetime.now().isoformat()}\n')
     # Ensure data directory exists for all tasks that may write to it
     os.makedirs('data', exist_ok=True)
 
