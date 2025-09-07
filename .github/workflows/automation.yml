@@ -2,7 +2,8 @@ name: Frequent Automation
 
 on:
   schedule:
-    - cron: '0 0,4,8,11,12,16 * * *'  # Runs at 00:00, 04:00, 08:00, 11:00, 12:00, 16:00 UTC daily
+    - cron: '11 11 * * *'  # Runs at 11:11 UTC (for immediate test)
+    - cron: '0 0,4,8,11,12,16 * * *'  # Regular schedule
   workflow_dispatch:
 
 jobs:
