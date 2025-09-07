@@ -20,7 +20,7 @@ jobs:
 
       - name: Install dependencies for prayer times and file updates
         run: |
-          pip install requests schedule
+          pip install requests schedule structlog
 
 
       - name: Set up Git user
