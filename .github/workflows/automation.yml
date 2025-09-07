@@ -1,0 +1,31 @@
+name: Frequent Automation
+
+on:
+  schedule:
+    - cron: '0 0,4,8,12,16 * * *'  # Runs at 00:00, 04:00, 08:00, 12:00, 16:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  run-automation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run main automation script
+        run: |
+          python render_daily_automation.py
+
+      - name: Update prayer times
+        run: |
+          python scripts/update_prayer_times.py
