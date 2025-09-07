@@ -11,10 +11,13 @@ from app.tasks.ml_tasks import rebuild_faiss_index
 from app.tasks.maintenance_tasks import cleanup_old_data
 from app.tasks.automation_tasks import update_development_stats
 import structlog
+import os
 
 logger = structlog.get_logger()
 
 def main():
+    # Ensure data directory exists for all tasks that may write to it
+    os.makedirs('data', exist_ok=True)
     github = GitHubAutomation()
     update_tasks = [
         (lambda: scrape_islamqa(5), "Scraped new Q&A from IslamQA.info"),

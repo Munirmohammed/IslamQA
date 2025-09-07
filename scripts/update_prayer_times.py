@@ -4,6 +4,7 @@ Fetch and update daily prayer (salah) times using Aladhan API.
 import requests
 from datetime import datetime
 import json
+import os
 
 CITY = "Addis Ababa"
 COUNTRY = "Ethiopia"
@@ -24,6 +25,8 @@ def fetch_prayer_times(city=CITY, country=COUNTRY):
 def update_prayer_times():
     try:
         prayer_data = fetch_prayer_times()
+        # Ensure data directory exists
+        os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
         # Load existing data if present
         try:
             with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
