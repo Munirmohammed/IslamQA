@@ -5,7 +5,8 @@ Runs 5 real update tasks, commits, and pushes to GitHub.
 import asyncio
 import sys
 from app.automation.github_automation import GitHubAutomation
-from app.tasks.scraping_tasks import scrape_islamqa, scrape_dar_al_ifta, cleanup_duplicate_questions
+from app.tasks.scraping_tasks import scrape_islamqa, scrape_dar_al_ifta
+import subprocess
 from app.tasks.ml_tasks import rebuild_faiss_index
 from app.tasks.maintenance_tasks import cleanup_old_data
 from app.tasks.automation_tasks import update_development_stats
@@ -21,6 +22,8 @@ def main():
         (lambda: rebuild_faiss_index(True), "Rebuilt FAISS ML index"),
         (lambda: cleanup_old_data(), "Cleaned up old data in DB"),
         (lambda: update_development_stats(), "Updated development stats/analytics"),
+        # Prayer times update
+        (lambda: subprocess.run([sys.executable, "scripts/update_prayer_times.py"], check=True), "Updated daily prayer times"),
     ]
 
     for func, msg in update_tasks:

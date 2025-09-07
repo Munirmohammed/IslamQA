@@ -31,6 +31,9 @@ torch==2.8.0+cpu
 faiss-cpu==1.7.4
 tf-keras==2.19.0
 
+# Pin blis to avoid build errors on Render
+blis==0.7.11
+
 # Arabic NLP Support
 pyarabic==0.6.15
 arabic-reshaper==3.0.0
