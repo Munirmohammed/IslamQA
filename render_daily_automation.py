@@ -16,17 +16,16 @@ import os
 logger = structlog.get_logger()
 
 def main():
-    # Always update a heartbeat file to guarantee a commit
-    heartbeat_file = 'data/automation_heartbeat.txt'
-    with open(heartbeat_file, 'w', encoding='utf-8') as f:
-        from datetime import datetime
-        f.write(f'Automation heartbeat: {datetime.now().isoformat()}\n')
-    # Ensure data directory exists for all tasks that may write to it
+    from datetime import datetime
     os.makedirs('data', exist_ok=True)
 
-    github = GitHubAutomation()
+    # Update all automation files before a single commit
+    # 1. Heartbeat file
+    heartbeat_file = 'data/automation_heartbeat.txt'
+    with open(heartbeat_file, 'w', encoding='utf-8') as f:
+        f.write(f'Automation heartbeat: {datetime.now().isoformat()}\n')
 
-    # Bump version in VERSION.txt
+    # 2. Version bump
     version_file = 'VERSION.txt'
     if os.path.exists(version_file):
         with open(version_file, 'r+') as f:
@@ -42,26 +41,15 @@ def main():
         with open(version_file, 'w') as f:
             f.write('1\n')
 
-    update_tasks = [
-        # (lambda: scrape_islamqa(5), "Scraped new Q&A from IslamQA.info"),
-        # (lambda: scrape_dar_al_ifta(5), "Scraped new Q&A from Dar al-Ifta"),
-        # (lambda: rebuild_faiss_index(True), "Rebuilt FAISS ML index"),
-        # (lambda: cleanup_old_data(), "Cleaned up old data in DB"),
-        # (lambda: update_development_stats(), "Updated development stats/analytics"),
-        # Prayer times update
-        (lambda: subprocess.run([sys.executable, "scripts/update_prayer_times.py"], check=True), "Updated daily prayer times"),
-    ]
+    # 3. Prayer times, random, stats, last_run
+    subprocess.run([sys.executable, "scripts/update_prayer_times.py"], check=True)
 
-    for func, msg in update_tasks:
-        try:
-            logger.info(f"Running: {msg}")
-            func()
-            github.add_all_changes()
-            github.make_commit(msg)
-            github.push_to_remote()
-            logger.info(f"Committed and pushed: {msg}")
-        except Exception as e:
-            logger.error(f"Task failed: {msg} | {str(e)}")
+    # 4. Stage and commit all changes
+    github = GitHubAutomation()
+    github.add_all_changes()
+    github.make_commit("Automated daily update: heartbeat, version, prayer times, stats, random, last_run")
+    github.push_to_remote()
+    logger.info("Committed and pushed: Automated daily update")
 
 if __name__ == "__main__":
     main()
