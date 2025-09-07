@@ -20,7 +20,7 @@ jobs:
 
       - name: Install dependencies for prayer times and file updates
         run: |
-          pip install requests schedule structlog pydantic-settings
+          pip install requests schedule structlog pydantic-settings celery
 
 
       - name: Set up Git user
