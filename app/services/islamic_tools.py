@@ -131,15 +131,23 @@ def calc_prayer_times(
             m, h = 0, (h + 1) % 24
         return f"{h:02d}:{m:02d}"
 
-    fajr = dhuhr - fajr_h if fajr_h is not None else None
     sunrise = dhuhr - sun_h if sun_h is not None else None
-    asr = dhuhr + asr_h if asr_h is not None else None
     maghrib = dhuhr + sun_h if sun_h is not None else None
+    asr = dhuhr + asr_h if asr_h is not None else None
+    fajr = dhuhr - fajr_h if fajr_h is not None else None
     if params["isha_minutes"] is not None and maghrib is not None:
         isha = maghrib + params["isha_minutes"] / 60.0
     else:
         isha_h = ha(params["isha"])
         isha = dhuhr + isha_h if isha_h is not None else None
+
+    # High-latitude fallback: 1/7-of-night when astronomical Fajr/Isha undefined.
+    if maghrib is not None and sunrise is not None:
+        night = (sunrise + 24 - maghrib) % 24
+        if fajr is None:
+            fajr = sunrise - night / 7.0
+        if isha is None:
+            isha = maghrib + night / 7.0
 
     return {
         "fajr": fmt(fajr),

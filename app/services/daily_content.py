@@ -175,15 +175,25 @@ class DailyContentService:
                 h = (h + 1) % 24
             return f"{h:02d}:{m:02d}"
 
-        fajr = dhuhr - fajr_h if fajr_h is not None else None
         sunrise = dhuhr - sunrise_h if sunrise_h is not None else None
-        asr = dhuhr + asr_h if asr_h is not None else None
         maghrib = dhuhr + sunrise_h if sunrise_h is not None else None
+        asr = dhuhr + asr_h if asr_h is not None else None
+        fajr = dhuhr - fajr_h if fajr_h is not None else None
         if params["isha_minutes"] is not None and maghrib is not None:
             isha = maghrib + params["isha_minutes"] / 60.0
         else:
             isha_h = hour_angle(params["isha"])
             isha = dhuhr + isha_h if isha_h is not None else None
+
+        # High-latitude fallback: when sun doesn't dip far enough for Fajr/Isha,
+        # use 1/7 of the night (Maghrib → next-day Sunrise) — a widely-used
+        # scholarly convention (Aqrab al-Bilad's modern equivalent).
+        if maghrib is not None and sunrise is not None:
+            night = (sunrise + 24 - maghrib) % 24
+            if fajr is None:
+                fajr = sunrise - night / 7.0
+            if isha is None:
+                isha = maghrib + night / 7.0
 
         return {
             "fajr": fmt(fajr),
