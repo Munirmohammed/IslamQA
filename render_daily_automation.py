@@ -1,75 +1,98 @@
 """
-Render Daily Automation Script
-Runs 5 real update tasks, commits, and pushes to GitHub.
+Daily Islamic content automation.
+
+Each run regenerates the day's content bundle (hadith, ayah, dua, hijri date,
+prayer times for major cities) and commits it. Output is real, useful data
+the frontend and any consumer can serve — no random padding, no heartbeat
+noise. If the source pools or service logic change, this script picks that
+up automatically.
 """
-import asyncio
-import sys
-from app.automation.github_automation import GitHubAutomation
-from app.tasks.scraping_tasks import scrape_islamqa, scrape_dar_al_ifta
-import subprocess
-from app.tasks.ml_tasks import rebuild_faiss_index
-from app.tasks.maintenance_tasks import cleanup_old_data
-from app.tasks.automation_tasks import update_development_stats
-import structlog
+
+from __future__ import annotations
+
+import json
 import os
+import subprocess
+import sys
+from datetime import date
+from pathlib import Path
 
-logger = structlog.get_logger()
+# Make 'app' importable when run from repo root
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-def main():
-    from datetime import datetime
+from app.services.daily_content import DailyContentService  # noqa: E402
+
+REPO_ROOT = Path(__file__).resolve().parent
+DAILY_DIR = REPO_ROOT / "data" / "daily"
+TODAY_FILE = DAILY_DIR / "today.json"
+HISTORY_FILE = DAILY_DIR / "history.json"
 
 
-    # 1. Heartbeat file (always changes)
-    with open('data/automation_heartbeat.txt', 'w', encoding='utf-8') as f:
-        f.write(f'Heartbeat: {datetime.now().isoformat()}\n')
+def write_today_bundle(service: DailyContentService) -> dict:
+    bundle = service.get_today_bundle()
+    DAILY_DIR.mkdir(parents=True, exist_ok=True)
+    with open(TODAY_FILE, "w", encoding="utf-8") as f:
+        json.dump(bundle, f, ensure_ascii=False, indent=2)
+    return bundle
 
-    # 2. Version file (always increments)
-    version_file = 'data/automation_version.txt'
-    if os.path.exists(version_file):
-        with open(version_file, 'r+') as f:
-            try:
-                version = int(f.read().strip())
-            except Exception:
-                version = 0
-            version += 1
-            f.seek(0)
-            f.write(str(version) + '\n')
-            f.truncate()
-    else:
-        with open(version_file, 'w') as f:
-            f.write('1\n')
 
-    # 3. Prayer times file (always changes)
-    with open('data/automation_prayertimes.txt', 'w', encoding='utf-8') as f:
-        f.write(f'Prayer times updated at: {datetime.now().isoformat()}\n')
+def append_history(bundle: dict) -> None:
+    entry = {
+        "gregorian_date": bundle["gregorian_date"],
+        "hijri": bundle["hijri_date"]["formatted"],
+        "hadith_id": bundle["hadith"]["id"],
+        "ayah_ref": f"{bundle['ayah']['surah_name_en']}:{bundle['ayah']['ayah_number']}",
+        "dua_id": bundle["dua"]["id"],
+        "generated_at": bundle["generated_at"],
+    }
+    history = []
+    if HISTORY_FILE.exists():
+        try:
+            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                history = json.load(f)
+        except Exception:
+            history = []
+    # Replace today's entry if regenerating, otherwise append. Keep most recent 365.
+    history = [h for h in history if h.get("gregorian_date") != entry["gregorian_date"]]
+    history.append(entry)
+    history = history[-365:]
+    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
 
-    # 4. Random file (always changes)
-    import random
-    with open('data/automation_random.txt', 'w', encoding='utf-8') as f:
-        f.write(f'Random value: {random.randint(100000, 999999)}\nTimestamp: {datetime.now().isoformat()}\n')
 
-    # 5. Stats file (always changes)
-    import json
-    stats_file = 'data/automation_stats.json'
-    try:
-        with open(stats_file, 'r', encoding='utf-8') as f:
-            stats = json.load(f)
-    except Exception:
-        stats = {"runs": []}
-    stats["runs"].append({"timestamp": datetime.now().isoformat()})
-    with open(stats_file, 'w', encoding='utf-8') as f:
-        json.dump(stats, f, ensure_ascii=False, indent=2)
+def run_git(*args: str) -> int:
+    return subprocess.run(["git", *args], cwd=REPO_ROOT, check=False).returncode
 
-    # 6. Last run file (always changes)
-    with open('data/automation_lastrun.txt', 'w', encoding='utf-8') as f:
-        f.write(f'Last run: {datetime.now().isoformat()}\n')
 
-    # 4. Stage and commit all changes
-    github = GitHubAutomation()
-    github.add_all_changes()
-    github.make_commit("Automated daily update: heartbeat, version, prayer times, stats, random, last_run")
-    github.push_to_remote()
-    logger.info("Committed and pushed: Automated daily update")
+def commit_and_push() -> None:
+    if run_git("add", "data/daily/today.json", "data/daily/history.json") != 0:
+        return
+    status = subprocess.run(
+        ["git", "status", "--porcelain", "data/daily/today.json", "data/daily/history.json"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if not status.stdout.strip():
+        print("No content changes — skipping commit")
+        return
+    today_iso = date.today().isoformat()
+    message = f"daily content: {today_iso}"
+    if run_git("commit", "-m", message) != 0:
+        return
+    if os.environ.get("SKIP_PUSH"):
+        return
+    run_git("push")
+
+
+def main() -> None:
+    service = DailyContentService()
+    bundle = write_today_bundle(service)
+    append_history(bundle)
+    print(f"Generated daily bundle for {bundle['gregorian_date']} ({bundle['hijri_date']['formatted']})")
+    print(f"  hadith #{bundle['hadith']['id']} | ayah {bundle['ayah']['surah_name_en']}:{bundle['ayah']['ayah_number']} | dua #{bundle['dua']['id']}")
+    commit_and_push()
+
 
 if __name__ == "__main__":
     main()
