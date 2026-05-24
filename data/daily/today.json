@@ -1,0 +1,276 @@
+{
+  "gregorian_date": "2026-05-24",
+  "hijri_date": {
+    "day": 7,
+    "month": 12,
+    "month_name_en": "Dhu al-Hijjah",
+    "month_name_ar": "ذو الحجة",
+    "year": 1447,
+    "formatted": "7 Dhu al-Hijjah 1447 AH"
+  },
+  "hadith": {
+    "id": 16,
+    "narrator": "Abu Hurayrah",
+    "text_en": "Whoever does not show mercy will not be shown mercy.",
+    "reference": "Sahih al-Bukhari 7376, Sahih Muslim 2318",
+    "grade": "Sahih"
+  },
+  "ayah": {
+    "id": 16,
+    "surah_number": 31,
+    "surah_name_en": "Luqman",
+    "surah_name_ar": "لقمان",
+    "ayah_number": 18,
+    "text_ar": "وَلَا تُصَعِّرْ خَدَّكَ لِلنَّاسِ وَلَا تَمْشِ فِي الْأَرْضِ مَرَحًا ۖ إِنَّ اللَّهَ لَا يُحِبُّ كُلَّ مُخْتَالٍ فَخُورٍ",
+    "text_en": "Do not turn your cheek in contempt toward people, and do not walk through the earth exultantly. Indeed, Allah does not like everyone self-deluded and boastful."
+  },
+  "dua": {
+    "id": 24,
+    "occasion": "For good in this life and the next",
+    "text_ar": "اللَّهُمَّ أَصْلِحْ لِي دِينِيَ الَّذِي هُوَ عِصْمَةُ أَمْرِي، وَأَصْلِحْ لِي دُنْيَايَ الَّتِي فِيهَا مَعَاشِي، وَأَصْلِحْ لِي آخِرَتِي الَّتِي فِيهَا مَعَادِي",
+    "transliteration": "Allahumma aslih li deeniya alladhi huwa 'ismatu amri, wa aslih li dunyaya allati feeha ma'ashi, wa aslih li akhirati allati feeha ma'adi",
+    "text_en_translation": "O Allah, rectify for me my religion which is the safeguard of my affairs, rectify for me my worldly life in which is my livelihood, and rectify for me my Hereafter to which I shall return.",
+    "source": "Sahih Muslim 2720"
+  },
+  "prayer_times": [
+    {
+      "city": "Mecca",
+      "country": "Saudi Arabia",
+      "lat": 21.4225,
+      "lon": 39.8262,
+      "times": {
+        "fajr": "04:17",
+        "sunrise": "05:39",
+        "dhuhr": "12:18",
+        "asr": "15:33",
+        "maghrib": "18:56",
+        "isha": "20:13"
+      }
+    },
+    {
+      "city": "Medina",
+      "country": "Saudi Arabia",
+      "lat": 24.4686,
+      "lon": 39.6142,
+      "times": {
+        "fajr": "04:09",
+        "sunrise": "05:35",
+        "dhuhr": "12:18",
+        "asr": "15:42",
+        "maghrib": "19:02",
+        "isha": "20:23"
+      }
+    },
+    {
+      "city": "Riyadh",
+      "country": "Saudi Arabia",
+      "lat": 24.7136,
+      "lon": 46.6753,
+      "times": {
+        "fajr": "03:40",
+        "sunrise": "05:06",
+        "dhuhr": "11:50",
+        "asr": "15:14",
+        "maghrib": "18:34",
+        "isha": "19:55"
+      }
+    },
+    {
+      "city": "Cairo",
+      "country": "Egypt",
+      "lat": 30.0444,
+      "lon": 31.2357,
+      "times": {
+        "fajr": "03:24",
+        "sunrise": "04:57",
+        "dhuhr": "11:52",
+        "asr": "15:28",
+        "maghrib": "18:47",
+        "isha": "20:14"
+      }
+    },
+    {
+      "city": "Istanbul",
+      "country": "Turkey",
+      "lat": 41.0082,
+      "lon": 28.9784,
+      "times": {
+        "fajr": "03:41",
+        "sunrise": "05:39",
+        "dhuhr": "13:01",
+        "asr": "16:59",
+        "maghrib": "20:23",
+        "isha": "22:13"
+      }
+    },
+    {
+      "city": "Dubai",
+      "country": "UAE",
+      "lat": 25.2048,
+      "lon": 55.2708,
+      "times": {
+        "fajr": "04:04",
+        "sunrise": "05:31",
+        "dhuhr": "12:16",
+        "asr": "15:41",
+        "maghrib": "19:01",
+        "isha": "20:22"
+      }
+    },
+    {
+      "city": "Tehran",
+      "country": "Iran",
+      "lat": 35.6892,
+      "lon": 51.389,
+      "times": {
+        "fajr": "03:10",
+        "sunrise": "04:54",
+        "dhuhr": "12:01",
+        "asr": "15:50",
+        "maghrib": "19:09",
+        "isha": "20:45"
+      }
+    },
+    {
+      "city": "Karachi",
+      "country": "Pakistan",
+      "lat": 24.8607,
+      "lon": 67.0011,
+      "times": {
+        "fajr": "04:18",
+        "sunrise": "05:44",
+        "dhuhr": "12:29",
+        "asr": "15:53",
+        "maghrib": "19:13",
+        "isha": "20:34"
+      }
+    },
+    {
+      "city": "Lahore",
+      "country": "Pakistan",
+      "lat": 31.5204,
+      "lon": 74.3587,
+      "times": {
+        "fajr": "03:26",
+        "sunrise": "05:01",
+        "dhuhr": "11:59",
+        "asr": "15:39",
+        "maghrib": "18:57",
+        "isha": "20:27"
+      }
+    },
+    {
+      "city": "Dhaka",
+      "country": "Bangladesh",
+      "lat": 23.8103,
+      "lon": 90.4125,
+      "times": {
+        "fajr": "03:48",
+        "sunrise": "05:13",
+        "dhuhr": "11:55",
+        "asr": "15:17",
+        "maghrib": "18:38",
+        "isha": "19:57"
+      }
+    },
+    {
+      "city": "Jakarta",
+      "country": "Indonesia",
+      "lat": -6.2088,
+      "lon": 106.8456,
+      "times": {
+        "fajr": "04:42",
+        "sunrise": "05:55",
+        "dhuhr": "11:49",
+        "asr": "15:12",
+        "maghrib": "17:44",
+        "isha": "18:53"
+      }
+    },
+    {
+      "city": "Kuala Lumpur",
+      "country": "Malaysia",
+      "lat": 3.139,
+      "lon": 101.6869,
+      "times": {
+        "fajr": "05:48",
+        "sunrise": "07:02",
+        "dhuhr": "13:10",
+        "asr": "16:35",
+        "maghrib": "19:18",
+        "isha": "20:28"
+      }
+    },
+    {
+      "city": "Lagos",
+      "country": "Nigeria",
+      "lat": 6.5244,
+      "lon": 3.3792,
+      "times": {
+        "fajr": "05:15",
+        "sunrise": "06:30",
+        "dhuhr": "12:43",
+        "asr": "16:08",
+        "maghrib": "18:57",
+        "isha": "20:07"
+      }
+    },
+    {
+      "city": "Casablanca",
+      "country": "Morocco",
+      "lat": 33.5731,
+      "lon": -7.5898,
+      "times": {
+        "fajr": "04:46",
+        "sunrise": "06:25",
+        "dhuhr": "13:27",
+        "asr": "17:11",
+        "maghrib": "20:30",
+        "isha": "22:02"
+      }
+    },
+    {
+      "city": "Addis Ababa",
+      "country": "Ethiopia",
+      "lat": 9.032,
+      "lon": 38.747,
+      "times": {
+        "fajr": "04:49",
+        "sunrise": "06:04",
+        "dhuhr": "12:22",
+        "asr": "15:45",
+        "maghrib": "18:39",
+        "isha": "19:50"
+      }
+    },
+    {
+      "city": "London",
+      "country": "United Kingdom",
+      "lat": 51.5074,
+      "lon": -0.1278,
+      "times": {
+        "fajr": "--:--",
+        "sunrise": "03:57",
+        "dhuhr": "11:57",
+        "asr": "16:14",
+        "maghrib": "19:58",
+        "isha": "23:09"
+      }
+    },
+    {
+      "city": "New York",
+      "country": "USA",
+      "lat": 40.7128,
+      "lon": -74.006,
+      "times": {
+        "fajr": "02:34",
+        "sunrise": "04:32",
+        "dhuhr": "11:53",
+        "asr": "15:51",
+        "maghrib": "19:14",
+        "isha": "21:03"
+      }
+    }
+  ],
+  "generated_at": "2026-05-24T20:21:45.855524+00:00"
+}
