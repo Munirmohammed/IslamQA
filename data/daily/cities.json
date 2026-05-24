@@ -1,0 +1,19 @@
+[
+  { "name": "Mecca", "country": "Saudi Arabia", "lat": 21.4225, "lon": 39.8262, "timezone_offset": 3 },
+  { "name": "Medina", "country": "Saudi Arabia", "lat": 24.4686, "lon": 39.6142, "timezone_offset": 3 },
+  { "name": "Riyadh", "country": "Saudi Arabia", "lat": 24.7136, "lon": 46.6753, "timezone_offset": 3 },
+  { "name": "Cairo", "country": "Egypt", "lat": 30.0444, "lon": 31.2357, "timezone_offset": 2 },
+  { "name": "Istanbul", "country": "Turkey", "lat": 41.0082, "lon": 28.9784, "timezone_offset": 3 },
+  { "name": "Dubai", "country": "UAE", "lat": 25.2048, "lon": 55.2708, "timezone_offset": 4 },
+  { "name": "Tehran", "country": "Iran", "lat": 35.6892, "lon": 51.3890, "timezone_offset": 3.5 },
+  { "name": "Karachi", "country": "Pakistan", "lat": 24.8607, "lon": 67.0011, "timezone_offset": 5 },
+  { "name": "Lahore", "country": "Pakistan", "lat": 31.5204, "lon": 74.3587, "timezone_offset": 5 },
+  { "name": "Dhaka", "country": "Bangladesh", "lat": 23.8103, "lon": 90.4125, "timezone_offset": 6 },
+  { "name": "Jakarta", "country": "Indonesia", "lat": -6.2088, "lon": 106.8456, "timezone_offset": 7 },
+  { "name": "Kuala Lumpur", "country": "Malaysia", "lat": 3.1390, "lon": 101.6869, "timezone_offset": 8 },
+  { "name": "Lagos", "country": "Nigeria", "lat": 6.5244, "lon": 3.3792, "timezone_offset": 1 },
+  { "name": "Casablanca", "country": "Morocco", "lat": 33.5731, "lon": -7.5898, "timezone_offset": 1 },
+  { "name": "Addis Ababa", "country": "Ethiopia", "lat": 9.0320, "lon": 38.7470, "timezone_offset": 3 },
+  { "name": "London", "country": "United Kingdom", "lat": 51.5074, "lon": -0.1278, "timezone_offset": 0 },
+  { "name": "New York", "country": "USA", "lat": 40.7128, "lon": -74.0060, "timezone_offset": -5 }
+]
