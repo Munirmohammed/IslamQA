@@ -1410,21 +1410,22 @@ function loadRecentAnswers() {
 // Initialize Application
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🕌 Islamic Q&A Platform - Beautiful Interface Loading...');
-    
+
     // Initialize all services
     navigation.init();
     theme.init();
     auth.init();
-    
+    features.init();
+
     // Load sample data
     loadSampleAnswers();
     loadRecentAnswers();
-    
+
     // Auto-connect chat if on ask section
     if (navigation.currentSection === 'ask') {
         chat.connect();
     }
-    
+
     console.log('✅ Beautiful Islamic Q&A Platform Ready!');
 });
 
@@ -1444,3 +1445,301 @@ window.addEventListener('offline', function() {
 window.addEventListener('beforeunload', function() {
     chat.disconnect();
 });
+
+// ─── Islamic feature modules ────────────────────────────────────────────────
+const features = {
+    apiBase: () => (window.CONFIG_ENV && CONFIG_ENV.API_BASE_URL) || 'http://localhost:8000',
+
+    async fetchJSON(path, opts) {
+        const res = await fetch(`${this.apiBase()}${path}`, opts);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    },
+
+    async fetchStaticFallback(path) {
+        const res = await fetch(path);
+        if (!res.ok) throw new Error('static fallback unavailable');
+        return await res.json();
+    },
+
+    init() {
+        this.daily.init(this);
+        this.prayer.init(this);
+        this.qibla.init(this);
+        this.tasbeeh.init();
+        this.names.init(this);
+        this.zakat.init(this);
+    },
+
+    daily: {
+        loaded: false,
+        async init(parent) {
+            const navItem = document.querySelector('.nav-item[data-section="daily"]');
+            if (!navItem) return;
+            navItem.addEventListener('click', () => this.load(parent));
+        },
+        async load(parent) {
+            if (this.loaded) return;
+            let bundle;
+            try {
+                bundle = await parent.fetchJSON('/api/v1/daily/today');
+            } catch (e) {
+                try { bundle = await parent.fetchStaticFallback('../data/daily/today.json'); }
+                catch (e2) {
+                    document.getElementById('daily-hadith-body').textContent = 'Could not load daily content.';
+                    return;
+                }
+            }
+            document.getElementById('daily-hijri').textContent =
+                `${bundle.hijri_date.formatted} · ${bundle.gregorian_date}`;
+            const h = bundle.hadith;
+            document.getElementById('daily-hadith-body').innerHTML =
+                `<blockquote>“${h.text_en}”</blockquote>` +
+                `<div class="daily-meta">Narrated by <strong>${h.narrator}</strong> · <em>${h.reference}</em></div>`;
+            const a = bundle.ayah;
+            document.getElementById('daily-ayah-body').innerHTML =
+                `<div class="arabic-text">${a.text_ar}</div>` +
+                `<blockquote>“${a.text_en}”</blockquote>` +
+                `<div class="daily-meta">${a.surah_name_en} (${a.surah_name_ar}) — ayah ${a.ayah_number}</div>`;
+            const d = bundle.dua;
+            document.getElementById('daily-dua-body').innerHTML =
+                `<div class="arabic-text">${d.text_ar}</div>` +
+                `<div class="dua-transliteration"><em>${d.transliteration}</em></div>` +
+                `<blockquote>“${d.text_en_translation}”</blockquote>` +
+                `<div class="daily-meta">${d.occasion} · <em>${d.source}</em></div>`;
+            this.loaded = true;
+        }
+    },
+
+    prayer: {
+        rows: null,
+        async init(parent) {
+            const navItem = document.querySelector('.nav-item[data-section="prayer"]');
+            if (!navItem) return;
+            navItem.addEventListener('click', () => this.load(parent));
+            const sel = document.getElementById('prayer-city');
+            sel.addEventListener('change', () => this.render(sel.value));
+        },
+        async load(parent) {
+            if (this.rows) return;
+            try {
+                this.rows = await parent.fetchJSON('/api/v1/daily/prayer-times');
+            } catch (e) {
+                try {
+                    const bundle = await parent.fetchStaticFallback('../data/daily/today.json');
+                    this.rows = bundle.prayer_times;
+                } catch (e2) {
+                    document.getElementById('prayer-times-grid').innerHTML =
+                        '<div class="empty-state">Could not load prayer times.</div>';
+                    return;
+                }
+            }
+            const sel = document.getElementById('prayer-city');
+            sel.innerHTML = this.rows
+                .map(r => `<option value="${r.city}">${r.city}, ${r.country}</option>`).join('');
+            this.render(this.rows[0].city);
+        },
+        render(cityName) {
+            const row = this.rows.find(r => r.city === cityName);
+            if (!row) return;
+            const t = row.times;
+            document.getElementById('prayer-times-grid').innerHTML = `
+                <div class="prayer-time-card"><div class="pt-label">Fajr</div><div class="pt-value">${t.fajr}</div></div>
+                <div class="prayer-time-card"><div class="pt-label">Sunrise</div><div class="pt-value">${t.sunrise}</div></div>
+                <div class="prayer-time-card"><div class="pt-label">Dhuhr</div><div class="pt-value">${t.dhuhr}</div></div>
+                <div class="prayer-time-card"><div class="pt-label">Asr</div><div class="pt-value">${t.asr}</div></div>
+                <div class="prayer-time-card"><div class="pt-label">Maghrib</div><div class="pt-value">${t.maghrib}</div></div>
+                <div class="prayer-time-card"><div class="pt-label">Isha</div><div class="pt-value">${t.isha}</div></div>
+            `;
+        }
+    },
+
+    qibla: {
+        init(parent) {
+            const btn = document.getElementById('qibla-locate');
+            if (!btn) return;
+            btn.addEventListener('click', () => this.locate(parent));
+        },
+        async locate(parent) {
+            const result = document.getElementById('qibla-result');
+            if (!navigator.geolocation) {
+                result.textContent = 'Geolocation not supported by this browser.';
+                return;
+            }
+            result.textContent = 'Getting your location…';
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                try {
+                    const q = await parent.fetchJSON('/api/v1/tools/qibla', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ lat: latitude, lon: longitude })
+                    });
+                    this.render(latitude, longitude, q);
+                } catch (e) {
+                    // Client-side fallback using same great-circle formula
+                    const q = this.computeLocal(latitude, longitude);
+                    this.render(latitude, longitude, q);
+                }
+            }, () => { result.textContent = 'Location permission denied.'; });
+        },
+        computeLocal(lat, lon) {
+            const KAABA_LAT = 21.4225, KAABA_LON = 39.8262;
+            const toRad = d => d * Math.PI / 180, toDeg = r => r * 180 / Math.PI;
+            const lat1 = toRad(lat), lat2 = toRad(KAABA_LAT);
+            const dLon = toRad(KAABA_LON - lon);
+            const y = Math.sin(dLon) * Math.cos(lat2);
+            const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+            const bearing = (toDeg(Math.atan2(y, x)) + 360) % 360;
+            const a = Math.sin((lat2 - lat1) / 2) ** 2 +
+                Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+            const distance = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return { bearing_degrees: +bearing.toFixed(2), distance_km: +distance.toFixed(1) };
+        },
+        render(lat, lon, q) {
+            document.getElementById('qibla-result').innerHTML =
+                `Your location: <strong>${lat.toFixed(3)}°, ${lon.toFixed(3)}°</strong><br>` +
+                `Bearing to Kaaba: <strong>${q.bearing_degrees}°</strong> from true north · ` +
+                `${q.distance_km} km away`;
+            const arrow = document.getElementById('qibla-arrow');
+            arrow.style.transform = `translate(-50%, -100%) rotate(${q.bearing_degrees}deg)`;
+        }
+    },
+
+    tasbeeh: {
+        count: 0, rounds: 0, total: 0, target: 33,
+        init() {
+            const disc = document.getElementById('tasbeeh-disc');
+            const reset = document.getElementById('tasbeeh-reset');
+            const targetInput = document.getElementById('tasbeeh-target-input');
+            if (!disc) return;
+            disc.addEventListener('click', () => this.tick());
+            reset.addEventListener('click', () => this.reset());
+            targetInput.addEventListener('change', () => {
+                this.target = Math.max(1, parseInt(targetInput.value, 10) || 33);
+                document.getElementById('tasbeeh-target').textContent = this.target;
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && navigation.currentSection === 'tasbeeh') {
+                    e.preventDefault();
+                    this.tick();
+                }
+            });
+        },
+        tick() {
+            this.count++;
+            this.total++;
+            if (this.count >= this.target) {
+                this.count = 0;
+                this.rounds++;
+                if (navigator.vibrate) navigator.vibrate(80);
+            }
+            document.getElementById('tasbeeh-count').textContent = this.count;
+            document.getElementById('tasbeeh-rounds').textContent = this.rounds;
+            document.getElementById('tasbeeh-total').textContent = this.total;
+        },
+        reset() {
+            this.count = 0; this.rounds = 0; this.total = 0;
+            document.getElementById('tasbeeh-count').textContent = 0;
+            document.getElementById('tasbeeh-rounds').textContent = 0;
+            document.getElementById('tasbeeh-total').textContent = 0;
+        }
+    },
+
+    names: {
+        all: null,
+        async init(parent) {
+            const navItem = document.querySelector('.nav-item[data-section="names"]');
+            const searchInput = document.getElementById('names-search');
+            if (!navItem) return;
+            navItem.addEventListener('click', () => this.load(parent));
+            if (searchInput) searchInput.addEventListener('input', () => this.render(searchInput.value));
+        },
+        async load(parent) {
+            if (this.all) return;
+            try {
+                this.all = await parent.fetchJSON('/api/v1/names/');
+            } catch (e) {
+                try { this.all = await parent.fetchStaticFallback('../data/names/asma_ul_husna.json'); }
+                catch (e2) {
+                    document.getElementById('names-grid').innerHTML =
+                        '<div class="empty-state">Could not load 99 Names.</div>';
+                    return;
+                }
+            }
+            this.render('');
+        },
+        render(filter) {
+            const needle = (filter || '').toLowerCase();
+            const matches = !needle ? this.all :
+                this.all.filter(n =>
+                    n.transliteration.toLowerCase().includes(needle) ||
+                    n.meaning_en.toLowerCase().includes(needle));
+            document.getElementById('names-grid').innerHTML = matches.map(n => `
+                <div class="name-card">
+                    <div class="name-number">${n.number}</div>
+                    <div class="name-ar">${n.name_ar}</div>
+                    <div class="name-translit">${n.transliteration}</div>
+                    <div class="name-meaning">${n.meaning_en}</div>
+                </div>
+            `).join('');
+        }
+    },
+
+    zakat: {
+        init(parent) {
+            const form = document.getElementById('zakat-form');
+            if (!form) return;
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const payload = {
+                    cash: +document.getElementById('zakat-cash').value || 0,
+                    business_assets: +document.getElementById('zakat-business').value || 0,
+                    gold_grams: +document.getElementById('zakat-gold').value || 0,
+                    silver_grams: +document.getElementById('zakat-silver').value || 0,
+                    debts: +document.getElementById('zakat-debts').value || 0,
+                    gold_price_per_gram: +document.getElementById('zakat-gold-price').value || 65,
+                };
+                let result;
+                try {
+                    result = await parent.fetchJSON('/api/v1/tools/zakat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+                } catch (err) {
+                    result = this.computeLocal(payload);
+                }
+                this.render(result);
+            });
+        },
+        computeLocal(p) {
+            const goldValue = p.gold_grams * p.gold_price_per_gram;
+            const silverValue = p.silver_grams * 0.85;
+            const total = p.cash + goldValue + silverValue + p.business_assets - p.debts;
+            const nisabGold = 87.48 * p.gold_price_per_gram;
+            const nisabSilver = 612.36 * 0.85;
+            const nisab = Math.min(nisabGold, nisabSilver);
+            const eligible = total >= nisab;
+            return {
+                total_wealth: +total.toFixed(2), nisab_used: +nisab.toFixed(2),
+                is_eligible: eligible, zakat_due: eligible ? +(total * 0.025).toFixed(2) : 0,
+                rate_percent: 2.5,
+            };
+        },
+        render(r) {
+            const status = r.is_eligible
+                ? `<div class="zakat-eligible">Your wealth exceeds the nisab — zakat is due.</div>`
+                : `<div class="zakat-noteligible">Your wealth is below the nisab — no zakat due this year.</div>`;
+            document.getElementById('zakat-result').innerHTML = `
+                ${status}
+                <div class="zakat-summary">
+                    <div><span>Total wealth</span><strong>${r.total_wealth.toLocaleString()}</strong></div>
+                    <div><span>Nisab threshold</span><strong>${r.nisab_used.toLocaleString()}</strong></div>
+                    <div><span>Zakat rate</span><strong>${r.rate_percent}%</strong></div>
+                    <div class="zakat-due"><span>Zakat due</span><strong>${r.zakat_due.toLocaleString()}</strong></div>
+                </div>
+            `;
+        }
+    }
+};
