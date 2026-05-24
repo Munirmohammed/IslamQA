@@ -49,6 +49,30 @@
                         <i class="fas fa-home"></i>
                         <span>Dashboard</span>
                     </div>
+                    <div class="nav-item" data-section="daily">
+                        <i class="fas fa-sun"></i>
+                        <span>Today</span>
+                    </div>
+                    <div class="nav-item" data-section="prayer">
+                        <i class="fas fa-clock"></i>
+                        <span>Prayer Times</span>
+                    </div>
+                    <div class="nav-item" data-section="qibla">
+                        <i class="fas fa-compass"></i>
+                        <span>Qibla</span>
+                    </div>
+                    <div class="nav-item" data-section="tasbeeh">
+                        <i class="fas fa-circle-notch"></i>
+                        <span>Tasbeeh</span>
+                    </div>
+                    <div class="nav-item" data-section="names">
+                        <i class="fas fa-star-and-crescent"></i>
+                        <span>99 Names</span>
+                    </div>
+                    <div class="nav-item" data-section="zakat">
+                        <i class="fas fa-calculator"></i>
+                        <span>Zakat</span>
+                    </div>
                     <div class="nav-item" data-section="categories">
                         <i class="fas fa-sitemap"></i>
                         <span>Categories</span>
@@ -499,6 +523,139 @@
                 </div>
             </div>
         </section>
+
+                <!-- Daily Section -->
+                <section id="daily-section" class="content-section">
+                    <div class="content-container">
+                        <div class="section-header">
+                            <h2>Today's Reminder</h2>
+                            <p id="daily-hijri" class="hijri-date">Loading Hijri date…</p>
+                        </div>
+                        <div class="daily-grid">
+                            <div class="daily-card" id="daily-hadith-card">
+                                <div class="daily-card-header"><i class="fas fa-book"></i><h3>Hadith of the Day</h3></div>
+                                <div class="daily-card-body" id="daily-hadith-body">Loading…</div>
+                            </div>
+                            <div class="daily-card" id="daily-ayah-card">
+                                <div class="daily-card-header"><i class="fas fa-quran"></i><h3>Ayah of the Day</h3></div>
+                                <div class="daily-card-body" id="daily-ayah-body">Loading…</div>
+                            </div>
+                            <div class="daily-card" id="daily-dua-card">
+                                <div class="daily-card-header"><i class="fas fa-hands"></i><h3>Dua of the Day</h3></div>
+                                <div class="daily-card-body" id="daily-dua-body">Loading…</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Prayer Times Section -->
+                <section id="prayer-section" class="content-section">
+                    <div class="content-container">
+                        <div class="section-header">
+                            <h2>Prayer Times</h2>
+                            <p>Computed astronomically using the Muslim World League method. Select a city to view today's times.</p>
+                        </div>
+                        <div class="prayer-controls">
+                            <label for="prayer-city">City</label>
+                            <select id="prayer-city"></select>
+                        </div>
+                        <div id="prayer-times-grid" class="prayer-times-grid"></div>
+                    </div>
+                </section>
+
+                <!-- Qibla Section -->
+                <section id="qibla-section" class="content-section">
+                    <div class="content-container">
+                        <div class="section-header">
+                            <h2>Qibla Direction</h2>
+                            <p>Bearing from your location to the Kaaba in Mecca. Allow location access to compute.</p>
+                        </div>
+                        <div class="qibla-widget">
+                            <button id="qibla-locate" class="btn-primary"><i class="fas fa-crosshairs"></i> Use my location</button>
+                            <div id="qibla-result" class="qibla-result"></div>
+                            <div class="qibla-compass">
+                                <div class="compass-ring">
+                                    <span class="compass-n">N</span>
+                                    <span class="compass-e">E</span>
+                                    <span class="compass-s">S</span>
+                                    <span class="compass-w">W</span>
+                                    <div id="qibla-arrow" class="compass-arrow"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tasbeeh Section -->
+                <section id="tasbeeh-section" class="content-section">
+                    <div class="content-container">
+                        <div class="section-header">
+                            <h2>Digital Tasbeeh</h2>
+                            <p>Counter for dhikr. Tap the disc or press space to count. Resets at 100 by default.</p>
+                        </div>
+                        <div class="tasbeeh-widget">
+                            <div class="tasbeeh-phrase">
+                                <select id="tasbeeh-phrase">
+                                    <option value="SubhanAllah">SubhanAllah (سُبْحَانَ ٱللَّٰهِ)</option>
+                                    <option value="Alhamdulillah">Alhamdulillah (ٱلْحَمْدُ لِلَّٰهِ)</option>
+                                    <option value="Allahu Akbar">Allahu Akbar (ٱللَّٰهُ أَكْبَرُ)</option>
+                                    <option value="La ilaha illa Allah">La ilaha illa Allah (لَا إِلَٰهَ إِلَّا ٱللَّٰهُ)</option>
+                                    <option value="Astaghfirullah">Astaghfirullah (أَسْتَغْفِرُ ٱللَّٰهَ)</option>
+                                </select>
+                            </div>
+                            <button id="tasbeeh-disc" class="tasbeeh-disc" type="button">
+                                <span class="tasbeeh-count" id="tasbeeh-count">0</span>
+                                <span class="tasbeeh-target">/ <span id="tasbeeh-target">33</span></span>
+                            </button>
+                            <div class="tasbeeh-controls">
+                                <label>Target <input id="tasbeeh-target-input" type="number" min="1" max="9999" value="33"></label>
+                                <button id="tasbeeh-reset" class="btn-secondary"><i class="fas fa-undo"></i> Reset</button>
+                            </div>
+                            <div class="tasbeeh-stats">
+                                Round: <strong id="tasbeeh-rounds">0</strong>
+                                · Total this session: <strong id="tasbeeh-total">0</strong>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 99 Names Section -->
+                <section id="names-section" class="content-section">
+                    <div class="content-container">
+                        <div class="section-header">
+                            <h2>99 Names of Allah</h2>
+                            <p>Al-Asma ul-Husna — the Most Beautiful Names of Allah with Arabic, transliteration, and meaning.</p>
+                        </div>
+                        <input id="names-search" type="text" placeholder="Search names (e.g. 'Mercy', 'Rahman')" class="names-search">
+                        <div id="names-grid" class="names-grid"></div>
+                    </div>
+                </section>
+
+                <!-- Zakat Section -->
+                <section id="zakat-section" class="content-section">
+                    <div class="content-container">
+                        <div class="section-header">
+                            <h2>Zakat Calculator</h2>
+                            <p>Estimate your annual zakat liability. Uses silver nisab by default (the more beneficial threshold for recipients).</p>
+                        </div>
+                        <form id="zakat-form" class="zakat-form">
+                            <div class="form-row">
+                                <label>Cash & bank balances <input type="number" step="0.01" min="0" id="zakat-cash" value="0"></label>
+                                <label>Business assets <input type="number" step="0.01" min="0" id="zakat-business" value="0"></label>
+                            </div>
+                            <div class="form-row">
+                                <label>Gold (grams) <input type="number" step="0.01" min="0" id="zakat-gold" value="0"></label>
+                                <label>Silver (grams) <input type="number" step="0.01" min="0" id="zakat-silver" value="0"></label>
+                            </div>
+                            <div class="form-row">
+                                <label>Debts owed <input type="number" step="0.01" min="0" id="zakat-debts" value="0"></label>
+                                <label>Gold price / gram <input type="number" step="0.01" min="0.01" id="zakat-gold-price" value="65"></label>
+                            </div>
+                            <button type="submit" class="btn-primary"><i class="fas fa-calculator"></i> Calculate Zakat</button>
+                        </form>
+                        <div id="zakat-result" class="zakat-result"></div>
+                    </div>
+                </section>
             </div>
     </main>
     </div>
