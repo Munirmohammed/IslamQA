@@ -1515,3 +1515,182 @@ a:hover {
         border: 1px solid #ccc;
     }
 }
+
+/* ─── Islamic feature sections ─────────────────────────────────────────────── */
+.content-container { padding: 0 1.5rem 2rem; max-width: 1100px; margin: 0 auto; }
+.hijri-date { color: var(--text-muted); font-style: italic; margin-top: 0.25rem; }
+
+.daily-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+}
+.daily-card {
+    background: var(--bg-secondary, #1e2433);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 1.25rem 1.25rem 1.5rem;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.daily-card:hover { transform: translateY(-2px); border-color: rgba(118, 199, 192, 0.4); }
+.daily-card-header {
+    display: flex; align-items: center; gap: 0.6rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding-bottom: 0.6rem; margin-bottom: 0.9rem;
+}
+.daily-card-header i { color: #76c7c0; font-size: 1.1rem; }
+.daily-card-header h3 { font-size: 1.05rem; margin: 0; }
+.daily-card-body blockquote {
+    margin: 0.6rem 0; padding: 0.5rem 0.9rem;
+    border-left: 3px solid #76c7c0; color: var(--text-white-primary, #eaeaea);
+    line-height: 1.55;
+}
+.arabic-text {
+    font-family: 'Amiri', serif;
+    font-size: 1.4rem; line-height: 1.9; direction: rtl; text-align: right;
+    color: #f4d35e; margin-bottom: 0.5rem;
+}
+.dua-transliteration { color: var(--text-muted); margin-bottom: 0.25rem; font-size: 0.95rem; }
+.daily-meta { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem; }
+
+.prayer-controls { margin: 1.25rem 0; display: flex; gap: 0.75rem; align-items: center; }
+.prayer-controls select {
+    background: var(--bg-secondary, #1e2433); color: inherit;
+    border: 1px solid rgba(255,255,255,0.1); padding: 0.55rem 0.8rem; border-radius: 8px;
+    min-width: 220px;
+}
+.prayer-times-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+.prayer-time-card {
+    background: var(--bg-secondary, #1e2433); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 1rem; text-align: center;
+}
+.pt-label { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.pt-value { font-size: 1.8rem; font-weight: 700; color: #76c7c0; margin-top: 0.35rem; font-variant-numeric: tabular-nums; }
+
+.qibla-widget { display: flex; flex-direction: column; align-items: center; gap: 1.25rem; padding-top: 1rem; }
+.qibla-result { text-align: center; line-height: 1.6; color: var(--text-white-primary, #eaeaea); }
+.qibla-compass { position: relative; width: 260px; height: 260px; margin-top: 0.5rem; }
+.compass-ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid rgba(118,199,192,0.4);
+    background: radial-gradient(circle, rgba(118,199,192,0.04), transparent 70%);
+}
+.compass-ring span {
+    position: absolute; color: var(--text-muted); font-weight: 600; font-size: 0.9rem;
+    transform: translate(-50%, -50%);
+}
+.compass-n { top: 8%; left: 50%; }
+.compass-s { bottom: 8%; left: 50%; }
+.compass-e { top: 50%; right: 4%; transform: translate(50%, -50%); }
+.compass-w { top: 50%; left: 4%; }
+.compass-arrow {
+    position: absolute; left: 50%; top: 50%;
+    width: 4px; height: 45%; background: linear-gradient(180deg, #f4d35e, #d97706);
+    border-radius: 4px 4px 0 0;
+    transform-origin: 50% 100%;
+    transform: translate(-50%, -100%) rotate(0deg);
+    transition: transform 0.6s ease;
+    box-shadow: 0 0 10px rgba(244,211,94,0.5);
+}
+.compass-arrow::before {
+    content: ''; position: absolute; top: -6px; left: 50%; transform: translateX(-50%);
+    border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 12px solid #f4d35e;
+}
+
+.tasbeeh-widget { display: flex; flex-direction: column; align-items: center; gap: 1.25rem; padding-top: 1rem; }
+.tasbeeh-phrase select {
+    background: var(--bg-secondary, #1e2433); color: inherit;
+    border: 1px solid rgba(255,255,255,0.1); padding: 0.6rem 1rem; border-radius: 8px; min-width: 280px;
+}
+.tasbeeh-disc {
+    width: 220px; height: 220px; border-radius: 50%; border: none;
+    background: radial-gradient(circle at 30% 30%, #1e3a5f, #0f1f3a);
+    color: #f4d35e; font-size: 4rem; font-weight: 700; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 8px 32px rgba(118,199,192,0.25), inset 0 -4px 12px rgba(0,0,0,0.5);
+    transition: transform 0.08s ease, box-shadow 0.2s ease;
+    user-select: none;
+}
+.tasbeeh-disc:active { transform: scale(0.96); box-shadow: 0 4px 16px rgba(118,199,192,0.3); }
+.tasbeeh-target { font-size: 0.9rem; color: var(--text-muted); font-weight: 400; margin-top: -0.25rem; }
+.tasbeeh-controls { display: flex; gap: 1rem; align-items: center; }
+.tasbeeh-controls label { display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted); }
+.tasbeeh-controls input {
+    background: var(--bg-secondary, #1e2433); color: inherit;
+    border: 1px solid rgba(255,255,255,0.1); padding: 0.4rem 0.6rem; border-radius: 6px; width: 80px;
+}
+.btn-secondary {
+    background: transparent; color: inherit; border: 1px solid rgba(255,255,255,0.15);
+    padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;
+}
+.tasbeeh-stats { color: var(--text-muted); font-size: 0.95rem; }
+
+.names-search {
+    width: 100%; background: var(--bg-secondary, #1e2433); color: inherit;
+    border: 1px solid rgba(255,255,255,0.1); padding: 0.7rem 1rem; border-radius: 10px;
+    margin: 1rem 0 1.5rem; font-size: 1rem;
+}
+.names-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;
+}
+.name-card {
+    background: var(--bg-secondary, #1e2433); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 1.1rem; position: relative;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.name-card:hover { transform: translateY(-2px); border-color: rgba(118,199,192,0.4); }
+.name-number {
+    position: absolute; top: 0.6rem; right: 0.8rem;
+    color: var(--text-muted); font-size: 0.85rem; font-weight: 600;
+}
+.name-ar {
+    font-family: 'Amiri', serif; font-size: 1.8rem; color: #f4d35e;
+    text-align: center; direction: rtl; margin-bottom: 0.4rem;
+}
+.name-translit { text-align: center; font-weight: 600; color: #76c7c0; margin-bottom: 0.3rem; }
+.name-meaning { text-align: center; color: var(--text-muted); font-size: 0.9rem; line-height: 1.4; }
+
+.zakat-form {
+    display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem 0;
+    background: var(--bg-secondary, #1e2433); border-radius: 14px; padding: 1.5rem;
+    border: 1px solid rgba(255,255,255,0.06); margin-top: 1.25rem;
+}
+.zakat-form .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.zakat-form label { display: flex; flex-direction: column; gap: 0.3rem; color: var(--text-muted); font-size: 0.9rem; }
+.zakat-form input {
+    background: rgba(0,0,0,0.3); color: inherit;
+    border: 1px solid rgba(255,255,255,0.1); padding: 0.6rem 0.8rem; border-radius: 8px;
+    font-size: 1rem;
+}
+.zakat-form button { align-self: flex-start; margin-top: 0.5rem; }
+.zakat-result { margin-top: 1.25rem; }
+.zakat-eligible {
+    background: rgba(118,199,192,0.1); border-left: 3px solid #76c7c0;
+    padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-weight: 600;
+}
+.zakat-noteligible {
+    background: rgba(255,255,255,0.04); border-left: 3px solid var(--text-muted);
+    padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1rem; color: var(--text-muted);
+}
+.zakat-summary {
+    background: var(--bg-secondary, #1e2433); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 1rem 1.25rem;
+}
+.zakat-summary > div {
+    display: flex; justify-content: space-between; padding: 0.45rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.zakat-summary > div:last-child { border-bottom: none; }
+.zakat-summary > div span { color: var(--text-muted); }
+.zakat-due strong { color: #76c7c0; font-size: 1.2rem; }
+
+@media (max-width: 640px) {
+    .zakat-form .form-row { grid-template-columns: 1fr; }
+    .tasbeeh-disc { width: 180px; height: 180px; font-size: 3.2rem; }
+    .qibla-compass { width: 220px; height: 220px; }
+}
