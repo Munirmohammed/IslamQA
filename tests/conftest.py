@@ -13,8 +13,35 @@ import tempfile
 import os
 
 from app.main import app
-from app.core.database import Base, get_db
+from app.core.database import Base, get_db, redis_client
 from app.core.config import settings
+from app.core.database_sqlite import mock_cache
+
+
+def _clear_rate_limit_state():
+    """Rate-limit counters are cached state that must not leak between
+    tests. Two separate, inconsistent backends are actually in play here
+    (a pre-existing issue, not something to redesign in a test fixture):
+    CacheUtils always reads/writes `mock_cache` directly, while
+    RateLimitMiddleware and RateLimiter.check_rate_limit's increment path
+    use whatever `redis_client` resolves to -- real Redis when one happens
+    to be reachable (as it is in this dev environment), the same mock_cache
+    otherwise. Clear both unconditionally so isolation doesn't depend on
+    which backend is active, or on real Redis TTLs being set correctly
+    (the increment path doesn't call .expire(), so real Redis keys don't
+    expire on their own and were observed to persist indefinitely)."""
+    mock_cache._cache.clear()
+    if redis_client is not mock_cache:
+        keys = redis_client.keys("rate_limit:*")
+        if keys:
+            redis_client.delete(*keys)
+
+
+@pytest.fixture(autouse=True)
+def _reset_mock_cache():
+    _clear_rate_limit_state()
+    yield
+    _clear_rate_limit_state()
 
 
 # Test database setup

@@ -207,12 +207,14 @@ class TestRateLimiting:
     @pytest.mark.slow
     def test_rate_limit_anonymous(self, client: TestClient):
         """Test rate limiting for anonymous users"""
-        # Make multiple requests quickly
+        # RateLimitMiddleware caps IP-based (anonymous) limits at 50 requests
+        # per window (see RateLimitMiddleware._get_user_limits) regardless of
+        # the configured default -- 25 requests could never exceed that.
         responses = []
-        for i in range(25):  # Exceed anonymous limit
+        for i in range(55):  # Exceed the 50-request anonymous IP limit
             response = client.get("/api/v1/search/categories")
             responses.append(response.status_code)
-        
+
         # Should get some 429 responses
         assert 429 in responses
     
@@ -254,7 +256,18 @@ class TestCORS:
     
     def test_cors_headers(self, client: TestClient):
         """Test CORS headers are present"""
-        response = client.options("/api/v1/search/categories")
+        # CORSMiddleware only treats an OPTIONS request as a preflight (and
+        # answers it directly, bypassing routing) when it carries both an
+        # Origin and an Access-Control-Request-Method header. A bare OPTIONS
+        # with neither falls through to routing, which 405s since the route
+        # only registers GET.
+        response = client.options(
+            "/api/v1/search/categories",
+            headers={
+                "Origin": "http://localhost:3000",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
         assert response.status_code == 200
         
         # Check for CORS headers

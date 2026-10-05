@@ -19,8 +19,10 @@ from app.core.database import get_db, User, CacheUtils
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# JWT token scheme
-security = HTTPBearer()
+# JWT token scheme. auto_error=False so a missing Authorization header
+# reaches get_current_user's own 401 handling below, instead of HTTPBearer
+# raising its default 403 "Not authenticated" before that code ever runs.
+security = HTTPBearer(auto_error=False)
 
 
 class SecurityUtils:
@@ -152,7 +154,7 @@ class AuthService:
 
 # Authentication dependencies
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
     """Get current authenticated user"""
@@ -161,7 +163,10 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
+    if credentials is None:
+        raise credentials_exception
+
     try:
         # Check if it's a Bearer token
         if credentials.scheme.lower() != "bearer":

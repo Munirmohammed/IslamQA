@@ -194,23 +194,73 @@ class DatabaseUtils:
 
 # Mock Redis for local development
 class MockCache:
-    """Mock cache for local development without Redis"""
-    
+    """Mock cache for local development without Redis.
+
+    Also implements a minimal redis-py-compatible incr/expire/pipeline
+    surface, since RateLimitMiddleware._check_rate_limit calls those on
+    whatever `redis_client` resolves to -- without this, every call raised
+    AttributeError, which was silently caught and treated as "allow the
+    request", meaning rate limiting never actually worked without real Redis.
+    """
+
     def __init__(self):
         self._cache = {}
-    
+
     def get(self, key: str):
         return self._cache.get(key)
-    
+
     def set(self, key: str, value: str, ttl: int = None):
         self._cache[key] = value
         return True
-    
+
     def delete(self, key: str):
         return self._cache.pop(key, None) is not None
-    
+
     def exists(self, key: str):
         return key in self._cache
+
+    def incr(self, key: str) -> int:
+        """Redis-compatible INCR: create at 0 if absent, then increment."""
+        current = int(self._cache.get(key, 0)) + 1
+        self._cache[key] = str(current)
+        return current
+
+    def expire(self, key: str, ttl: int) -> bool:
+        """No-op: this mock doesn't implement TTL-based expiry. Callers here
+        rate-limit via time-bucketed key names (rate_limit:<id>:<window_start>),
+        so correctness doesn't depend on active expiry, only eventual cleanup."""
+        return key in self._cache
+
+    def pipeline(self) -> "MockPipeline":
+        """Immediate (non-batched) execution is fine for a local mock --
+        there's no concurrent-access race to protect against here."""
+        return MockPipeline(self)
+
+
+class MockPipeline:
+    """Queues incr/expire calls, applies them to the backing MockCache on
+    execute() -- enough of redis-py's pipeline interface for
+    RateLimitMiddleware._check_rate_limit to work against it."""
+
+    def __init__(self, cache: "MockCache"):
+        self._cache = cache
+        self._ops = []
+
+    def incr(self, key: str) -> "MockPipeline":
+        self._ops.append(("incr", key))
+        return self
+
+    def expire(self, key: str, ttl: int) -> "MockPipeline":
+        self._ops.append(("expire", key, ttl))
+        return self
+
+    def execute(self) -> list:
+        results = [
+            self._cache.incr(op[1]) if op[0] == "incr" else self._cache.expire(op[1], op[2])
+            for op in self._ops
+        ]
+        self._ops = []
+        return results
 
 
 # Global mock cache instance

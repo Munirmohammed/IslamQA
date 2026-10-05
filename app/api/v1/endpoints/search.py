@@ -20,7 +20,7 @@ router = APIRouter()
 
 
 class SearchRequest(BaseModel):
-    query: str = Field(..., min_length=1, max_length=500, description="Search query")
+    query: str = Field(..., min_length=2, max_length=500, description="Search query")
     language: str = Field(default="auto", description="Language preference (auto, en, ar)")
     category: Optional[str] = Field(default=None, description="Category filter")
     scholar: Optional[str] = Field(default=None, description="Scholar filter")
@@ -60,7 +60,7 @@ class QuestionSuggestionResponse(BaseModel):
 @router.get("/", response_model=SearchResponse)
 async def search_knowledge_base_get(
     request: Request,
-    query: str = Query(..., min_length=1, max_length=500, description="Search query"),
+    query: str = Query(..., min_length=2, max_length=500, description="Search query"),
     language: str = Query(default="auto", description="Language preference (auto, en, ar)"),
     category: Optional[str] = Query(default=None, description="Category filter"),
     scholar: Optional[str] = Query(default=None, description="Scholar filter"),
