@@ -3,11 +3,11 @@ SQLite-compatible Database Configuration
 Modified models for local development with SQLite
 """
 
-from sqlalchemy import create_engine, MetaData, Column, Integer, String, Text, DateTime, Date, Float, Boolean, ForeignKey
+from sqlalchemy import create_engine, MetaData, Column, Integer, String, Text, DateTime, Date, Float, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from sqlalchemy.dialects.sqlite import JSON
-from datetime import datetime
+from datetime import datetime, date
 import uuid
 from typing import Generator
 
@@ -141,6 +141,25 @@ class UserStreak(Base):
     total_verses_read = Column(Integer, default=0)
     total_hasanat = Column(Integer, default=0)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class MemorizationCard(Base):
+    """Per-user, per-ayah spaced-repetition (SM-2) state for hifz practice."""
+    __tablename__ = "memorization_cards"
+    __table_args__ = (
+        UniqueConstraint("user_id", "surah_number", "ayah_number", name="uq_user_ayah_card"),
+    )
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    surah_number = Column(Integer, nullable=False)
+    ayah_number = Column(Integer, nullable=False)
+    ease_factor = Column(Float, default=2.5)
+    interval_days = Column(Integer, default=0)
+    repetitions = Column(Integer, default=0)
+    due_date = Column(Date, default=date.today)
+    last_reviewed_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 # Database dependency
