@@ -11,6 +11,7 @@ from datetime import datetime
 
 from app.core.database import get_db, Question, Answer, User
 from app.core.security import get_current_user, get_current_admin_user, get_optional_user
+from app.core.dependencies import get_knowledge_service
 from app.services.knowledge_service import KnowledgeService
 
 router = APIRouter()
@@ -59,11 +60,11 @@ class AnswerCreate(BaseModel):
 async def get_question(
     question_id: str,
     user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    knowledge_service: KnowledgeService = Depends(get_knowledge_service)
 ):
     """Get a specific question and its answers"""
     try:
-        knowledge_service = KnowledgeService()
         question_data = await knowledge_service.get_question_by_id(question_id)
         
         if not question_data:
@@ -388,12 +389,11 @@ async def get_related_questions(
     question_id: str,
     limit: int = Query(default=10, ge=1, le=20),
     user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    knowledge_service: KnowledgeService = Depends(get_knowledge_service)
 ):
     """Get questions related to a specific question"""
     try:
-        knowledge_service = KnowledgeService()
-        
         # Get the original question
         question_data = await knowledge_service.get_question_by_id(question_id)
         if not question_data:

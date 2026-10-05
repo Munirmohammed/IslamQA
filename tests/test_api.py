@@ -6,6 +6,9 @@ Test cases for Islamic Q&A API endpoints
 import pytest
 from fastapi.testclient import TestClient
 
+from app.main import app
+from app.core.dependencies import get_knowledge_service, get_ml_service
+
 
 class TestHealthEndpoint:
     """Test health check endpoint"""
@@ -137,6 +140,29 @@ class TestSearchEndpoints:
         }
         response = client.post("/api/v1/search/", json=search_data)
         assert response.status_code == 422  # Validation error
+
+
+class TestDependencyInjectedServices:
+    """Verify search/questions endpoints use the injected KnowledgeService/
+    MLService (via app.core.dependencies) rather than constructing and
+    re-initializing their own instances per request. Overriding the
+    dependency with a mock and asserting the mock's fixed response comes
+    back proves the endpoint is actually going through the injected
+    service, not a separately-constructed real one."""
+
+    def test_search_uses_injected_knowledge_service(self, client: TestClient, mock_knowledge_service, mock_ml_service):
+        app.dependency_overrides[get_knowledge_service] = lambda: mock_knowledge_service
+        app.dependency_overrides[get_ml_service] = lambda: mock_ml_service
+        try:
+            response = client.post("/api/v1/search/", json={"query": "prayer", "language": "en"})
+            assert response.status_code == 200
+
+            data = response.json()
+            assert data["results"][0]["question_id"] == "test-id"
+            assert data["results"][0]["question"] == "Test question"
+        finally:
+            app.dependency_overrides.pop(get_knowledge_service, None)
+            app.dependency_overrides.pop(get_ml_service, None)
 
 
 class TestQuestionEndpoints:

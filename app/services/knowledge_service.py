@@ -8,63 +8,58 @@ import asyncio
 import json
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import text, or_, and_
+from sqlalchemy import text
 import structlog
 import hashlib
 from collections import defaultdict
 import re
 
 from app.core.database import (
-    SessionLocal, Question, Answer, Source, UserInteraction, 
+    SessionLocal, Question, Answer, Source, UserInteraction,
     DatabaseUtils, CacheUtils
 )
 from app.core.config import settings
 from app.core.monitoring import MetricsCollector
 from app.services.ml_service import MLService, TextPreprocessor
+from app.services.bm25_service import BM25Index
+from app.services.fusion_service import reciprocal_rank_fusion
+from app.services.fuzzy_match import CharNgramIndex, BM25_LOW_SCORE_THRESHOLD
+from app.services.rerank_service import CrossEncoderReranker, MAX_RERANK_CANDIDATES
 
 logger = structlog.get_logger()
 
 
 class KnowledgeIndexer:
-    """Advanced indexing for the knowledge base"""
-    
+    """Category/scholar indexing for the knowledge base.
+
+    Keyword indexing previously lived here as a hand-rolled Jaccard-overlap
+    inverted index; that's now superseded by BM25Index (proper term
+    frequency / inverse document frequency ranking, see bm25_service.py),
+    so it's been removed rather than kept as unused dead code.
+    """
+
     def __init__(self):
         self.text_preprocessor = TextPreprocessor()
-        self.keyword_index = defaultdict(set)
         self.category_index = defaultdict(set)
         self.scholar_index = defaultdict(set)
-    
+
     async def build_indexes(self):
         """Build various indexes for fast retrieval"""
         logger.info("Building knowledge base indexes...")
-        
+
         db = SessionLocal()
         try:
-            # Build keyword index
-            await self._build_keyword_index(db)
-            
             # Build category index
             await self._build_category_index(db)
-            
+
             # Build scholar index
             await self._build_scholar_index(db)
-            
+
             logger.info("Knowledge base indexes built successfully")
-            
+
         finally:
             db.close()
-    
-    async def _build_keyword_index(self, db: Session):
-        """Build keyword-based index"""
-        questions = db.query(Question).all()
-        
-        for question in questions:
-            # Extract keywords from question
-            keywords = self._extract_keywords(question.question_text, question.language)
-            
-            for keyword in keywords:
-                self.keyword_index[keyword].add(str(question.id))
-    
+
     async def _build_category_index(self, db: Session):
         """Build category-based index"""
         questions = db.query(Question).filter(Question.category.isnot(None)).all()
@@ -81,36 +76,6 @@ class KnowledgeIndexer:
             if answer.scholar_name:
                 self.scholar_index[answer.scholar_name.lower()].add(str(answer.question_id))
     
-    def _extract_keywords(self, text: str, language: str) -> List[str]:
-        """Extract important keywords from text"""
-        processed_text = self.text_preprocessor.preprocess_text(text, language)
-        words = processed_text.split()
-        
-        # Filter by length and importance
-        keywords = [word for word in words if len(word) > 3]
-        
-        return keywords[:20]  # Limit to top 20 keywords
-    
-    def search_by_keywords(self, keywords: List[str]) -> set:
-        """Search questions by keywords"""
-        if not keywords:
-            return set()
-        
-        # Find intersection of keyword results
-        result_sets = [self.keyword_index.get(keyword.lower(), set()) for keyword in keywords]
-        
-        if not result_sets:
-            return set()
-        
-        # Start with first set
-        results = result_sets[0]
-        
-        # Intersect with other sets
-        for result_set in result_sets[1:]:
-            results = results.intersection(result_set)
-        
-        return results
-    
     def search_by_category(self, category: str) -> set:
         """Search questions by category"""
         return self.category_index.get(category.lower(), set())
@@ -120,246 +85,22 @@ class KnowledgeIndexer:
         return self.scholar_index.get(scholar.lower(), set())
 
 
-class AdvancedSearch:
-    """Advanced search capabilities"""
-    
-    def __init__(self, indexer: KnowledgeIndexer):
-        self.indexer = indexer
-        self.text_preprocessor = TextPreprocessor()
-    
-    async def search(
-        self, 
-        query: str,
-        filters: Optional[Dict[str, Any]] = None,
-        sort_by: str = 'relevance',
-        limit: int = 20
-    ) -> List[Dict[str, Any]]:
-        """Advanced search with multiple strategies"""
-        try:
-            filters = filters or {}
-            results = []
-            
-            # Strategy 1: Keyword-based search
-            keyword_results = await self._keyword_search(query, filters)
-            results.extend(keyword_results)
-            
-            # Strategy 2: Semantic search (if ML service available)
-            semantic_results = await self._semantic_search(query, filters)
-            results.extend(semantic_results)
-            
-            # Strategy 3: Full-text search
-            fulltext_results = await self._fulltext_search(query, filters)
-            results.extend(fulltext_results)
-            
-            # Deduplicate and score
-            final_results = self._deduplicate_and_score(results, query)
-            
-            # Sort results
-            sorted_results = self._sort_results(final_results, sort_by)
-            
-            return sorted_results[:limit]
-            
-        except Exception as e:
-            logger.error(f"Error in advanced search: {str(e)}")
-            return []
-    
-    async def _keyword_search(self, query: str, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Keyword-based search using indexes"""
-        try:
-            # Extract keywords from query
-            language = self.text_preprocessor.detect_language(query)
-            keywords = self.text_preprocessor.preprocess_text(query, language).split()
-            
-            # Search using keyword index
-            question_ids = self.indexer.search_by_keywords(keywords)
-            
-            if not question_ids:
-                return []
-            
-            # Get question details from database
-            db = SessionLocal()
-            try:
-                questions = db.query(Question).filter(
-                    Question.id.in_(question_ids)
-                ).all()
-                
-                results = []
-                for question in questions:
-                    # Apply filters
-                    if not self._passes_filters(question, filters):
-                        continue
-                    
-                    # Get best answer
-                    best_answer = db.query(Answer).filter(
-                        Answer.question_id == question.id
-                    ).order_by(Answer.confidence_score.desc()).first()
-                    
-                    result = {
-                        'question_id': str(question.id),
-                        'question': question.question_text,
-                        'answer': best_answer.answer_text if best_answer else "",
-                        'source_name': best_answer.source_name if best_answer else "",
-                        'scholar_name': best_answer.scholar_name if best_answer else "",
-                        'category': question.category,
-                        'language': question.language,
-                        'search_method': 'keyword',
-                        'relevance_score': self._calculate_keyword_relevance(query, question.question_text)
-                    }
-                    results.append(result)
-                
-                return results
-                
-            finally:
-                db.close()
-                
-        except Exception as e:
-            logger.error(f"Error in keyword search: {str(e)}")
-            return []
-    
-    async def _semantic_search(self, query: str, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Semantic search using ML service"""
-        try:
-            # This would use the ML service for semantic similarity
-            # For now, return empty list if ML service is not available
-            return []
-            
-        except Exception as e:
-            logger.error(f"Error in semantic search: {str(e)}")
-            return []
-    
-    async def _fulltext_search(self, query: str, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Full-text search using database capabilities"""
-        try:
-            db = SessionLocal()
-            try:
-                # Build full-text search query
-                search_terms = query.split()
-                search_conditions = []
-                
-                for term in search_terms:
-                    search_conditions.append(
-                        or_(
-                            Question.question_text.ilike(f"%{term}%"),
-                            Question.category.ilike(f"%{term}%")
-                        )
-                    )
-                
-                if not search_conditions:
-                    return []
-                
-                # Execute search
-                questions = db.query(Question).filter(
-                    or_(*search_conditions)
-                ).limit(50).all()
-                
-                results = []
-                for question in questions:
-                    # Apply filters
-                    if not self._passes_filters(question, filters):
-                        continue
-                    
-                    # Get best answer
-                    best_answer = db.query(Answer).filter(
-                        Answer.question_id == question.id
-                    ).order_by(Answer.confidence_score.desc()).first()
-                    
-                    result = {
-                        'question_id': str(question.id),
-                        'question': question.question_text,
-                        'answer': best_answer.answer_text if best_answer else "",
-                        'source_name': best_answer.source_name if best_answer else "",
-                        'scholar_name': best_answer.scholar_name if best_answer else "",
-                        'category': question.category,
-                        'language': question.language,
-                        'search_method': 'fulltext',
-                        'relevance_score': self._calculate_fulltext_relevance(query, question.question_text)
-                    }
-                    results.append(result)
-                
-                return results
-                
-            finally:
-                db.close()
-                
-        except Exception as e:
-            logger.error(f"Error in fulltext search: {str(e)}")
-            return []
-    
-    def _passes_filters(self, question: Question, filters: Dict[str, Any]) -> bool:
-        """Check if question passes the given filters"""
-        if filters.get('language') and question.language != filters['language']:
-            return False
-        
-        if filters.get('category') and question.category != filters['category']:
-            return False
-        
-        if filters.get('source'):
-            # Would need to check answer source
-            pass
-        
-        return True
-    
-    def _calculate_keyword_relevance(self, query: str, question_text: str) -> float:
-        """Calculate relevance score for keyword search"""
-        query_words = set(query.lower().split())
-        question_words = set(question_text.lower().split())
-        
-        overlap = len(query_words.intersection(question_words))
-        total = len(query_words.union(question_words))
-        
-        return overlap / total if total > 0 else 0.0
-    
-    def _calculate_fulltext_relevance(self, query: str, question_text: str) -> float:
-        """Calculate relevance score for fulltext search"""
-        # Simple scoring based on term frequency
-        query_terms = query.lower().split()
-        question_lower = question_text.lower()
-        
-        score = 0.0
-        for term in query_terms:
-            count = question_lower.count(term)
-            score += count
-        
-        # Normalize by question length
-        return score / len(question_text.split()) if question_text else 0.0
-    
-    def _deduplicate_and_score(self, results: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
-        """Remove duplicates and combine scores"""
-        unique_results = {}
-        
-        for result in results:
-            question_id = result['question_id']
-            
-            if question_id in unique_results:
-                # Combine scores from different search methods
-                existing = unique_results[question_id]
-                existing['relevance_score'] = max(
-                    existing['relevance_score'], 
-                    result['relevance_score']
-                )
-                existing['search_method'] = f"{existing['search_method']},{result['search_method']}"
-            else:
-                unique_results[question_id] = result
-        
-        return list(unique_results.values())
-    
-    def _sort_results(self, results: List[Dict[str, Any]], sort_by: str) -> List[Dict[str, Any]]:
-        """Sort results by specified criteria"""
-        if sort_by == 'relevance':
-            return sorted(results, key=lambda x: x['relevance_score'], reverse=True)
-        elif sort_by == 'date':
-            # Would need creation date in results
-            return results
-        else:
-            return results
-
-
 class KnowledgeService:
-    """Main knowledge service"""
-    
+    """Main knowledge service.
+
+    Hybrid retrieval strategy: fuse FAISS dense-vector results (via
+    MLService) with BM25 sparse/lexical results (via BM25Index) using
+    Reciprocal Rank Fusion. This replaced the previous AdvancedSearch class
+    (Jaccard-keyword-index + broken ILIKE full-text + an always-empty
+    semantic-search stub, merged by naive first-seen-wins dedup across two
+    incompatible score scales) — see search_knowledge_base below.
+    """
+
     def __init__(self):
         self.indexer = KnowledgeIndexer()
-        self.advanced_search = AdvancedSearch(self.indexer)
+        self.bm25_index = BM25Index()
+        self.char_ngram_index = CharNgramIndex()
+        self.reranker = CrossEncoderReranker()
         self.ml_service = None
         self.is_initialized = False
     
@@ -370,22 +111,26 @@ class KnowledgeService:
         
         try:
             logger.info("Initializing Knowledge Service...")
-            
+
             # Build indexes
             await self.indexer.build_indexes()
-            
+            self.bm25_index.build_index()
+            self.char_ngram_index.build_index()
+            if settings.ENABLE_RERANKING:
+                self.reranker.load()
+
             # Initialize ML service
             self.ml_service = MLService()
             await self.ml_service.initialize_models()
-            
+
             self.is_initialized = True
             logger.info("Knowledge Service initialized successfully")
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize Knowledge Service: {str(e)}")
             # Continue without ML service
             self.is_initialized = True
-    
+
     async def search_knowledge_base(
         self,
         query: str,
@@ -394,35 +139,92 @@ class KnowledgeService:
         use_ml: bool = True,
         limit: int = 10
     ) -> Dict[str, Any]:
-        """Search the knowledge base with multiple strategies"""
+        """Hybrid search: fuse FAISS dense results and BM25 sparse results
+        via Reciprocal Rank Fusion, rather than concatenating a fixed split
+        of each and deduplicating first-seen-wins (the old approach)."""
         try:
-            results = []
-            
-            # Use ML service if available and requested
+            filters = filters or {}
+            candidate_pool = max(limit * 3, settings.MAX_RESULTS)
+
+            # Dense (FAISS) candidates, keyed by question_id, sorted best-first.
+            dense_results_by_id: Dict[str, Dict[str, Any]] = {}
+            dense_ranked_ids: List[str] = []
             if use_ml and self.ml_service and settings.ENABLE_ML_MATCHING:
-                ml_results = await self.ml_service.process_question(query, language)
-                if ml_results.get('results'):
-                    results.extend(ml_results['results'][:limit//2])
-            
-            # Use advanced search for additional results
-            search_results = await self.advanced_search.search(
-                query, 
-                filters, 
-                limit=limit - len(results)
-            )
-            results.extend(search_results)
-            
-            # Deduplicate
-            unique_results = self._deduplicate_results(results)
-            
+                ml_results = await self.ml_service.process_question(
+                    query, language, top_k=candidate_pool
+                )
+                for result in ml_results.get('results', []):
+                    question_id = result['question_id']
+                    dense_ranked_ids.append(question_id)
+                    dense_results_by_id[question_id] = result
+
+            # Sparse (BM25) candidates, ranked best-first.
+            sparse_results = self.bm25_index.search(query, language, top_k=candidate_pool)
+            sparse_ranked_ids = [qid for qid, _ in sparse_results]
+
+            # BM25 found little/nothing lexically (e.g. the query is a
+            # corrupted/OCR-noisy variant of the indexed text) — fall back to
+            # character n-gram similarity, which tolerates dropped/substituted
+            # characters that break token-level BM25 matching entirely.
+            top_bm25_score = sparse_results[0][1] if sparse_results else 0.0
+            fuzzy_ranked_ids: List[str] = []
+            if settings.ENABLE_FUZZY_MATCHING and top_bm25_score < BM25_LOW_SCORE_THRESHOLD:
+                fuzzy_ranked_ids = self.char_ngram_index.ranked_ids(query, language, top_k=candidate_pool)
+
+            # Fuse by rank position (sidesteps normalizing dense cosine-similarity
+            # scores against BM25's unbounded term-frequency scores).
+            fused = reciprocal_rank_fusion([dense_ranked_ids, sparse_ranked_ids, fuzzy_ranked_ids])
+
+            # Fetch full result data for any fused hit found only via BM25/fuzzy match.
+            missing_ids = [qid for qid, _ in fused if qid not in dense_results_by_id]
+            sparse_details_by_id = self._fetch_result_details(missing_ids) if missing_ids else {}
+
+            dense_id_set = set(dense_ranked_ids)
+            sparse_id_set = set(sparse_ranked_ids) | set(fuzzy_ranked_ids)
+
+            # Collect a pool larger than `limit` (when reranking is enabled)
+            # so the cross-encoder has a meaningful top-K to reorder before
+            # truncation, rather than reranking within an already-truncated set.
+            # Must stay >= limit, or a caller requesting more than
+            # MAX_RERANK_CANDIDATES would silently get back fewer than they asked for
+            # (CrossEncoderReranker.rerank already caps the actual rerank pass at
+            # MAX_RERANK_CANDIDATES internally and passes the rest through unranked).
+            rerank_pool_size = max(limit, MAX_RERANK_CANDIDATES) if settings.ENABLE_RERANKING else limit
+
+            pooled_results = []
+            for question_id, fused_score in fused:
+                result = dense_results_by_id.get(question_id) or sparse_details_by_id.get(question_id)
+                if not result:
+                    continue
+                if not self._passes_filters(result, filters):
+                    continue
+
+                result = dict(result)
+                result['fused_score'] = fused_score
+                if question_id in dense_id_set and question_id in sparse_id_set:
+                    result['search_method'] = 'hybrid'
+                elif question_id in dense_id_set:
+                    result['search_method'] = 'dense'
+                else:
+                    result['search_method'] = 'sparse'
+                pooled_results.append(result)
+
+                if len(pooled_results) >= rerank_pool_size:
+                    break
+
+            if settings.ENABLE_RERANKING:
+                pooled_results = self.reranker.rerank(query, pooled_results)
+
+            results = pooled_results[:limit]
+
             return {
                 'query': query,
                 'language': language,
-                'total_results': len(unique_results),
-                'results': unique_results[:limit],
-                'search_methods_used': self._get_search_methods_used(unique_results)
+                'total_results': len(results),
+                'results': results,
+                'search_methods_used': self._get_search_methods_used(results)
             }
-            
+
         except Exception as e:
             logger.error(f"Error searching knowledge base: {str(e)}")
             return {
@@ -432,6 +234,52 @@ class KnowledgeService:
                 'results': [],
                 'error': str(e)
             }
+
+    def _fetch_result_details(self, question_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Batch-fetch question/answer data for BM25-only hits that weren't
+        already returned (with full data) by the dense/FAISS pass."""
+        db = SessionLocal()
+        try:
+            questions_by_id = {
+                str(q.id): q
+                for q in db.query(Question).filter(Question.id.in_(question_ids)).all()
+            }
+
+            best_answer_by_question_id: Dict[str, Answer] = {}
+            for answer in db.query(Answer).filter(Answer.question_id.in_(question_ids)).all():
+                question_id = str(answer.question_id)
+                current_best = best_answer_by_question_id.get(question_id)
+                if current_best is None or answer.confidence_score > current_best.confidence_score:
+                    best_answer_by_question_id[question_id] = answer
+
+            details = {}
+            for question_id, question in questions_by_id.items():
+                best_answer = best_answer_by_question_id.get(question_id)
+                details[question_id] = {
+                    'question_id': question_id,
+                    'question': question.question_text,
+                    'answer': best_answer.answer_text if best_answer else "No answer available",
+                    'similarity_score': 0.0,
+                    'source_name': best_answer.source_name if best_answer else "Unknown",
+                    'source_url': best_answer.source_url if best_answer else "",
+                    'scholar_name': best_answer.scholar_name if best_answer else "",
+                    'category': question.category,
+                    'language': question.language,
+                    'confidence_score': best_answer.confidence_score if best_answer else 0.0
+                }
+            return details
+        finally:
+            db.close()
+
+    def _passes_filters(self, result: Dict[str, Any], filters: Dict[str, Any]) -> bool:
+        """Check if a fused result dict passes the given filters."""
+        if filters.get('language') and result.get('language') != filters['language']:
+            return False
+
+        if filters.get('category') and result.get('category') != filters['category']:
+            return False
+
+        return True
     
     async def get_categories(self) -> List[Dict[str, Any]]:
         """Get all available categories with counts"""
@@ -615,19 +463,6 @@ class KnowledgeService:
         except Exception as e:
             logger.error(f"Error getting analytics summary: {str(e)}")
             return {}
-    
-    def _deduplicate_results(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Remove duplicate results"""
-        seen = set()
-        unique_results = []
-        
-        for result in results:
-            question_id = result.get('question_id')
-            if question_id and question_id not in seen:
-                seen.add(question_id)
-                unique_results.append(result)
-        
-        return unique_results
     
     def _get_search_methods_used(self, results: List[Dict[str, Any]]) -> List[str]:
         """Get list of search methods used in results"""

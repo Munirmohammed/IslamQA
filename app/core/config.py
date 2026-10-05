@@ -83,7 +83,15 @@ class Settings(BaseSettings):
     # Knowledge Base Settings
     MIN_SIMILARITY_SCORE: float = Field(default=0.7, description="Minimum similarity score")
     MAX_RESULTS: int = Field(default=10, description="Maximum results per query")
-    ENABLE_FUZZY_MATCHING: bool = Field(default=True, description="Enable fuzzy matching")
+    ENABLE_FUZZY_MATCHING: bool = Field(
+        default=True,
+        description="Enable character n-gram fallback matching for noisy/corrupted queries "
+                     "(e.g. OCR-style errors) when BM25 lexical search finds little/nothing"
+    )
+    ENABLE_RERANKING: bool = Field(
+        default=True,
+        description="Enable cross-encoder reranking of fused search results"
+    )
     
     # Rate Limiting
     RATE_LIMIT_REQUESTS: int = Field(default=100, description="Requests per minute")

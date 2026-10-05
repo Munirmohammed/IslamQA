@@ -28,12 +28,15 @@ def test_engine():
     )
     Base.metadata.create_all(bind=engine)
     yield engine
-    
+
     # Cleanup
+    engine.dispose()  # release pooled connections, or Windows keeps the file locked
     try:
         os.remove("./test.db")
     except FileNotFoundError:
         pass
+    except PermissionError:
+        pass  # another connection still holds the file open; not worth failing the suite over
 
 
 @pytest.fixture(scope="function")
@@ -49,21 +52,36 @@ def db_session(test_engine):
         session.close()
 
 
+@pytest.fixture(scope="session")
+def _test_client_session():
+    """Session-scoped TestClient so the app's lifespan (real ML model
+    loading, FAISS/BM25/char-ngram index building, cross-encoder reranker
+    loading) runs once for the whole test session instead of once per test.
+    A function-scoped TestClient re-enters the lifespan context manager on
+    every single test, re-triggering all of that -- harmless when it was
+    just one sentence-transformer load, but with the full hybrid retrieval
+    stack now involved this made the suite take 30+ minutes instead of under
+    10, and pushed later tests into what looked like resource exhaustion.
+    """
+    with TestClient(app) as test_client:
+        yield test_client
+
+
 @pytest.fixture(scope="function")
-def client(db_session):
-    """Create test client with test database"""
+def client(db_session, _test_client_session):
+    """Test client with a fresh, isolated DB session per test, reusing the
+    session-scoped app/lifespan from _test_client_session."""
     def override_get_db():
         try:
             yield db_session
         finally:
             pass
-    
+
     app.dependency_overrides[get_db] = override_get_db
-    
-    with TestClient(app) as test_client:
-        yield test_client
-    
-    app.dependency_overrides.clear()
+
+    yield _test_client_session
+
+    app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture
@@ -211,7 +229,10 @@ def mock_knowledge_service():
                 "question": "Test question",
                 "answers": [{"answer_text": "Test answer"}]
             }
-    
+
+        async def record_user_interaction(self, session_id, query, results, selected_answer_id=None, feedback=None):
+            pass
+
     return MockKnowledgeService()
 
 

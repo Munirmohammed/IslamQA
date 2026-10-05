@@ -18,6 +18,7 @@ requests==2.31.0
 beautifulsoup4==4.13.3
 scrapy==2.11.0
 selenium==4.15.2
+aiohttp==3.14.3
 pandas==2.2.3
 numpy==1.26.4
 
@@ -36,8 +37,9 @@ blis==0.7.11
 
 # Arabic NLP Support
 pyarabic==0.6.15
-arabic-reshaper==3.0.0
-python-bidi==0.4.2
+
+# Hybrid Retrieval (sparse/lexical layer, fused with FAISS dense search)
+rank-bm25==0.2.2
 
 # Authentication & Security
 python-jose[cryptography]==3.5.0
@@ -56,6 +58,7 @@ structlog==25.4.0
 # Testing
 pytest==8.0.2
 pytest-asyncio==0.23.5
+pytest-cov==7.1.0
 httpx==0.27.0
 
 # Utilities

@@ -18,6 +18,7 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import SnowballStemmer
+import pyarabic.araby as araby
 import re
 import json
 import hashlib
@@ -70,6 +71,14 @@ class TextPreprocessor:
         
         # Remove special characters but keep Arabic diacritics
         text = re.sub(r'[^\w\s\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]', ' ', text)
+
+        # Arabic punctuation such as the Arabic question mark shares the
+        # same Unicode block as Arabic letters (roughly U+0600 to U+06FF), so
+        # the whitelist above keeps it attached to the preceding word -- e.g.
+        # a word immediately before a question mark would never match the
+        # same word typed without one. Strip common Arabic punctuation marks
+        # explicitly, the same way English punctuation is already excluded above.
+        text = re.sub(r'[\u061F\u060C\u061B\u066A\u066B\u066C\u06D4]', ' ', text)
         
         return text.strip()
     
@@ -116,15 +125,19 @@ class TextPreprocessor:
         return ' '.join(tokens)
     
     def preprocess_arabic(self, text: str) -> str:
-        """Preprocess Arabic text"""
-        # Remove diacritics
-        text = re.sub(r'[\u064B-\u0652\u0670\u0640]', '', text)
-        
-        # Normalize Arabic characters
-        text = text.replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا')
-        text = text.replace('ة', 'ه')
-        text = text.replace('ى', 'ي')
-        
+        """Preprocess Arabic text using pyarabic's normalization (replacing
+        the previous hand-rolled regex, which only covered a subset of these
+        cases and left pyarabic as an unused dependency)."""
+        # Strip diacritics: tashkeel (fatha/damma/kasra/sukun/shadda),
+        # small alef (dagger alif), and quranic marks.
+        text = araby.strip_diacritics(text)
+        # Strip tatweel/kashida (the elongation character)
+        text = araby.strip_tatweel(text)
+        # Normalize alef-family variants (hamza-alef forms + alef maksura) to plain alef
+        text = araby.normalize_alef(text)
+        # Normalize teh marbuta to heh
+        text = araby.normalize_teh(text)
+
         # Tokenize (simple split for Arabic)
         tokens = text.split()
         
@@ -311,46 +324,68 @@ class VectorEmbeddings:
             
             # Search in FAISS index
             similarities, indices = self.faiss_index.search(query_vector, top_k * 2)  # Get more to filter
-            
-            # Get question details from database
+
+            # Collect candidate (question_id, similarity) pairs in FAISS rank order,
+            # filtering by threshold/validity before touching the database at all.
+            candidates: List[Tuple[str, float]] = []
+            for similarity, idx in zip(similarities[0], indices[0]):
+                if similarity < min_similarity:
+                    continue
+                # FAISS pads with idx == -1 when there are fewer real matches
+                # than requested; without this check, -1 silently resolves to
+                # the *last* entry via Python's negative indexing below.
+                if idx < 0 or idx >= len(self.question_ids):
+                    continue
+                candidates.append((self.question_ids[idx], float(similarity)))
+
+                if len(candidates) >= top_k:
+                    break
+
+            if not candidates:
+                return []
+
+            # Batch-fetch questions and answers in two queries total instead of
+            # one round-trip per hit (previously O(top_k) queries here).
             db = SessionLocal()
             try:
+                candidate_ids = [qid for qid, _ in candidates]
+
+                questions_by_id = {
+                    str(q.id): q
+                    for q in db.query(Question).filter(Question.id.in_(candidate_ids)).all()
+                }
+
+                best_answer_by_question_id: Dict[str, Answer] = {}
+                for answer in db.query(Answer).filter(Answer.question_id.in_(candidate_ids)).all():
+                    question_id = str(answer.question_id)
+                    current_best = best_answer_by_question_id.get(question_id)
+                    if current_best is None or answer.confidence_score > current_best.confidence_score:
+                        best_answer_by_question_id[question_id] = answer
+
                 results = []
-                for i, (similarity, idx) in enumerate(zip(similarities[0], indices[0])):
-                    if similarity < min_similarity:
+                for question_id, similarity in candidates:
+                    question = questions_by_id.get(question_id)
+                    if not question:
                         continue
-                    
-                    if idx >= len(self.question_ids):
-                        continue
-                    
-                    question_id = self.question_ids[idx]
-                    question = db.query(Question).filter(Question.id == question_id).first()
-                    
-                    if question:
-                        # Get best answer for this question
-                        best_answer = db.query(Answer).filter(
-                            Answer.question_id == question.id
-                        ).order_by(Answer.confidence_score.desc()).first()
-                        
-                        result = {
-                            'question_id': str(question.id),
-                            'question': question.question_text,
-                            'answer': best_answer.answer_text if best_answer else "No answer available",
-                            'similarity_score': float(similarity),
-                            'source_name': best_answer.source_name if best_answer else "Unknown",
-                            'source_url': best_answer.source_url if best_answer else "",
-                            'scholar_name': best_answer.scholar_name if best_answer else "",
-                            'category': question.category,
-                            'language': question.language,
-                            'confidence_score': best_answer.confidence_score if best_answer else 0.0
-                        }
-                        results.append(result)
-                        
-                        if len(results) >= top_k:
-                            break
-                
+
+                    best_answer = best_answer_by_question_id.get(question_id)
+
+                    result = {
+                        'question_id': str(question.id),
+                        'question': question.question_text,
+                        'answer': best_answer.answer_text if best_answer else "No answer available",
+                        'similarity_score': similarity,
+                        'source_name': best_answer.source_name if best_answer else "Unknown",
+                        'source_url': best_answer.source_url if best_answer else "",
+                        'scholar_name': best_answer.scholar_name if best_answer else "",
+                        'category': question.category,
+                        'language': question.language,
+                        'confidence_score': best_answer.confidence_score if best_answer else 0.0
+                    }
+                    results.append(result)
+
                 return results
-                
+
             finally:
                 db.close()
                 
@@ -443,22 +478,23 @@ class MLService:
             raise
     
     async def process_question(
-        self, 
-        question: str, 
+        self,
+        question: str,
         language: str = 'auto',
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
+        top_k: Optional[int] = None
     ) -> Dict[str, Any]:
         """Process a question and find relevant answers"""
         try:
             # Detect language if auto
             if language == 'auto':
                 language = self.text_preprocessor.detect_language(question)
-            
+
             # Find similar questions
             similar_questions = await self.vector_embeddings.find_similar_questions(
-                question, 
-                language, 
-                top_k=settings.MAX_RESULTS
+                question,
+                language,
+                top_k=top_k or settings.MAX_RESULTS
             )
             
             # Apply context-aware filtering if context provided

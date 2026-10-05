@@ -1,0 +1,32 @@
+[
+  {
+    "clean_word": "أركان",
+    "corrupted_word": "أركام",
+    "note": "نـ>مـ confusion",
+    "expected_question_id": "492004f5-d5a8-4da7-972b-bfde8a75bcb0"
+  },
+  {
+    "clean_word": "الفجر",
+    "corrupted_word": "الفحر",
+    "note": "جـ>حـ confusion (dot)",
+    "expected_question_id": "6fcc2a7e-f56a-48d4-b16a-d6830f913a0e"
+  },
+  {
+    "clean_word": "أكبر",
+    "corrupted_word": "أكبز",
+    "note": "رـ>زـ confusion (dot)",
+    "expected_question_id": "e973dade-e629-4aa1-a6ca-32e46a426858"
+  },
+  {
+    "clean_word": "ركعات",
+    "corrupted_word": "ركغات",
+    "note": "عـ>غـ confusion (dot)",
+    "expected_question_id": "38a7876e-9129-4bda-ab0f-85615319c64c"
+  },
+  {
+    "clean_word": "الزكاة",
+    "corrupted_word": "الركاة",
+    "note": "زـ>رـ confusion (dot)",
+    "expected_question_id": "7e85ff96-ac42-4e36-a3e5-e853eff655b2"
+  }
+]

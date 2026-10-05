@@ -1,0 +1,62 @@
+[
+  {
+    "query": "What is the first of the five pillars of Islam?",
+    "expected_question_id": "jVMoN8Vxf-PLpn4WsoR5IRsoQcChiYdWPX_d",
+    "language": "en"
+  },
+  {
+    "query": "What time is Fajr prayer performed?",
+    "expected_question_id": "sYUSadA80mxza10DkjXy6PrFakNHPPdfMsPu",
+    "language": "en"
+  },
+  {
+    "query": "What does Allahu Akbar mean?",
+    "expected_question_id": "YHN69FRRAXPc9QI-AHy8oiorzj_SZweyW1wj",
+    "language": "en"
+  },
+  {
+    "query": "Is there a dua for protection from sudden death?",
+    "expected_question_id": "086a3b98-ad63-4e89-a8a1-02d3da954315",
+    "language": "en"
+  },
+  {
+    "query": "Is it sinful for a Muslim to live in a non-Muslim country?",
+    "expected_question_id": "e95bbae4-cb2d-46d6-8f85-d95e50aa7675",
+    "language": "en"
+  },
+  {
+    "query": "Does a husband have to financially support his mother-in-law?",
+    "expected_question_id": "2569035b-fe8c-494b-bd8f-2eb2ecc079be",
+    "language": "en"
+  },
+  {
+    "query": "Can ruqyah be performed for someone who is not present?",
+    "expected_question_id": "4614b516-d6c8-4920-b0e8-0483f2dcefc7",
+    "language": "en"
+  },
+  {
+    "query": "ما هي أركان الإسلام؟",
+    "expected_question_id": "492004f5-d5a8-4da7-972b-bfde8a75bcb0",
+    "language": "ar"
+  },
+  {
+    "query": "متى يدخل وقت صلاة الفجر؟",
+    "expected_question_id": "6fcc2a7e-f56a-48d4-b16a-d6830f913a0e",
+    "language": "ar"
+  },
+  {
+    "query": "ماذا يعني قول الله أكبر؟",
+    "expected_question_id": "e973dade-e629-4aa1-a6ca-32e46a426858",
+    "language": "ar"
+  },
+  {
+    "query": "كم ركعة في صلاة الظهر؟",
+    "expected_question_id": "38a7876e-9129-4bda-ab0f-85615319c64c",
+    "language": "ar"
+  },
+  {
+    "query": "ما حكم الزكاة في الإسلام؟",
+    "expected_question_id": "7e85ff96-ac42-4e36-a3e5-e853eff655b2",
+    "language": "ar"
+  }
+]

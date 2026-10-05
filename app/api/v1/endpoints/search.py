@@ -11,6 +11,7 @@ import uuid
 
 from app.core.database import get_db, User
 from app.core.security import get_optional_user, RateLimiter
+from app.core.dependencies import get_knowledge_service, get_ml_service
 from app.services.knowledge_service import KnowledgeService
 from app.services.ml_service import MLService
 from app.core.monitoring import MetricsCollector
@@ -67,7 +68,9 @@ async def search_knowledge_base_get(
     use_ml: bool = Query(default=True, description="Use ML-powered search"),
     limit: int = Query(default=10, ge=1, le=50, description="Maximum results"),
     user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    knowledge_service: KnowledgeService = Depends(get_knowledge_service),
+    ml_service: MLService = Depends(get_ml_service)
 ):
     """Search the Islamic Q&A knowledge base (GET method for frontend)"""
     # Create SearchRequest object from query parameters
@@ -80,8 +83,10 @@ async def search_knowledge_base_get(
         use_ml=use_ml,
         limit=limit
     )
-    
-    return await search_knowledge_base_implementation(search_request, request, user, db)
+
+    return await search_knowledge_base_implementation(
+        search_request, request, user, db, knowledge_service, ml_service
+    )
 
 
 @router.post("/", response_model=SearchResponse)
@@ -89,17 +94,23 @@ async def search_knowledge_base_post(
     search_request: SearchRequest,
     request: Request,
     user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    knowledge_service: KnowledgeService = Depends(get_knowledge_service),
+    ml_service: MLService = Depends(get_ml_service)
 ):
     """Search the Islamic Q&A knowledge base (POST method)"""
-    return await search_knowledge_base_implementation(search_request, request, user, db)
+    return await search_knowledge_base_implementation(
+        search_request, request, user, db, knowledge_service, ml_service
+    )
 
 
 async def search_knowledge_base_implementation(
     search_request: SearchRequest,
     request: Request,
     user: Optional[User],
-    db: Session
+    db: Session,
+    knowledge_service: KnowledgeService,
+    ml_service: MLService
 ):
     """Search the Islamic Q&A knowledge base - shared implementation"""
     try:
@@ -112,11 +123,7 @@ async def search_knowledge_base_implementation(
             client_ip = request.client.host if request.client else "unknown"
             if not RateLimiter.check_rate_limit(f"ip:{client_ip}", 20):  # Lower limit for anonymous
                 raise HTTPException(status_code=429, detail="Rate limit exceeded")
-        
-        # Initialize knowledge service
-        knowledge_service = KnowledgeService()
-        await knowledge_service.initialize()
-        
+
         # Prepare filters
         filters = {}
         if search_request.category:
@@ -160,9 +167,8 @@ async def search_knowledge_base_implementation(
         # Get suggestions for partial queries
         suggestions = []
         if len(search_request.query) >= 3:
-            ml_service = MLService()
             suggestions = await ml_service.get_question_suggestions(
-                search_request.query, 
+                search_request.query,
                 search_request.language
             )
         
@@ -204,7 +210,8 @@ async def get_question_suggestions(
     q: str = Query(..., min_length=2, description="Partial query for suggestions"),
     language: str = Query(default="auto", description="Language preference"),
     limit: int = Query(default=10, ge=1, le=20, description="Maximum suggestions"),
-    user: Optional[User] = Depends(get_optional_user)
+    user: Optional[User] = Depends(get_optional_user),
+    ml_service: MLService = Depends(get_ml_service)
 ):
     """Get question suggestions for autocomplete"""
     try:
@@ -212,10 +219,7 @@ async def get_question_suggestions(
         if user:
             if not RateLimiter.check_rate_limit(f"suggestions:{str(user.id)}", 50):
                 raise HTTPException(status_code=429, detail="Too many suggestion requests")
-        
-        ml_service = MLService()
-        await ml_service.initialize_models()
-        
+
         suggestions = await ml_service.get_question_suggestions(q, language)
         
         return QuestionSuggestionResponse(
@@ -234,11 +238,11 @@ async def get_question_suggestions(
 @router.get("/categories")
 async def get_categories(
     user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    knowledge_service: KnowledgeService = Depends(get_knowledge_service)
 ):
     """Get all available categories"""
     try:
-        knowledge_service = KnowledgeService()
         categories = await knowledge_service.get_categories()
         
         return {
@@ -256,11 +260,11 @@ async def get_categories(
 @router.get("/scholars")
 async def get_scholars(
     user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    knowledge_service: KnowledgeService = Depends(get_knowledge_service)
 ):
     """Get all available scholars"""
     try:
-        knowledge_service = KnowledgeService()
         scholars = await knowledge_service.get_scholars()
         
         return {
@@ -286,7 +290,8 @@ async def advanced_search(
     sort_by: str = Query(default="relevance", description="Sort order (relevance, date, confidence)"),
     limit: int = Query(default=20, ge=1, le=100, description="Maximum results"),
     user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    knowledge_service: KnowledgeService = Depends(get_knowledge_service)
 ):
     """Advanced search with multiple filters and sorting options"""
     try:
@@ -294,10 +299,7 @@ async def advanced_search(
         if user:
             if not RateLimiter.check_rate_limit(str(user.id), user.rate_limit):
                 raise HTTPException(status_code=429, detail="Rate limit exceeded")
-        
-        knowledge_service = KnowledgeService()
-        await knowledge_service.initialize()
-        
+
         # Build filters
         filters = {}
         if language != "auto":
@@ -357,13 +359,11 @@ async def find_similar_questions(
     question_id: str,
     limit: int = Query(default=10, ge=1, le=20, description="Maximum similar questions"),
     user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    knowledge_service: KnowledgeService = Depends(get_knowledge_service)
 ):
     """Find questions similar to a specific question"""
     try:
-        knowledge_service = KnowledgeService()
-        await knowledge_service.initialize()
-        
         # Get the original question
         original_question = await knowledge_service.get_question_by_id(question_id)
         if not original_question:
@@ -404,12 +404,11 @@ async def submit_search_feedback(
     rating: int = Query(..., ge=1, le=5, description="Rating from 1-5"),
     comment: Optional[str] = Query(default=None, description="Optional feedback comment"),
     user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    knowledge_service: KnowledgeService = Depends(get_knowledge_service)
 ):
     """Submit feedback for a search result"""
     try:
-        knowledge_service = KnowledgeService()
-        
         # Record feedback
         session_id = str(uuid.uuid4())
         feedback = {
