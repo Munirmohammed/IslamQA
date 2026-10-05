@@ -97,6 +97,11 @@ class Settings(BaseSettings):
         description="Enable Quran voice/text search ('Tasmeea' -- recite or "
                      "type a fragment, find the matching ayah)"
     )
+    ENABLE_RECITATION_CHECKER: bool = Field(
+        default=True,
+        description="Enable Quran recitation mistake-checking (ASR + "
+                     "word-level diff against the canonical ayah text)"
+    )
     
     # Rate Limiting
     RATE_LIMIT_REQUESTS: int = Field(default=100, description="Requests per minute")

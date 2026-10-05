@@ -54,6 +54,55 @@ class TestMergeEditions:
         assert merged[0]["translation_en"] == "translation-1"
         assert merged[1]["key"] == "1:2"
 
+    def test_strips_leading_basmalah_from_ayah_one_of_an_ordinary_surah(self):
+        """alquran.cloud's editions embed the Basmalah into ayah 1's text
+        for most surahs (matching mushaf printing convention) -- this would
+        make an exact recitation of just the ayah register as 'missing the
+        Basmalah'. It should be split out into its own field instead."""
+        service = QuranCorpusService()
+        uthmani = _edition_payload({
+            112: [(1, 1, "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ قُلْ هُوَ ٱللَّهُ أَحَدٌ")]
+        })
+        simple = _edition_payload({112: [(1, 1, "بسم الله الرحمن الرحيم قل هو الله احد")]})
+        translation = _edition_payload({112: [(1, 1, "In the name of Allah... Say, He is Allah, One.")]})
+
+        merged = service._merge_editions({
+            "uthmani": uthmani, "simple": simple, "translation_en": translation,
+        })
+
+        ayah = merged[0]
+        assert ayah["basmalah"] == "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ"
+        assert ayah["text_simple"] == "قل هو الله احد"
+        assert ayah["text_uthmani"] == "قُلْ هُوَ ٱللَّهُ أَحَدٌ"
+
+    def test_does_not_strip_basmalah_for_al_fatiha_or_at_tawbah(self):
+        """Surah 1's ayah 1 *is* the Basmalah (nothing to split out of it),
+        and surah 9 has no Basmalah at all -- both must be left untouched."""
+        service = QuranCorpusService()
+        uthmani = _edition_payload({
+            1: [(1, 1, "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ")],
+            9: [(1, 1, "بَرَاءَةٌ مِّنَ ٱللَّهِ")],
+        })
+        simple = _edition_payload({
+            1: [(1, 1, "بسم الله الرحمن الرحيم")],
+            9: [(1, 1, "براءة من الله")],
+        })
+        translation = _edition_payload({
+            1: [(1, 1, "In the name of Allah")], 9: [(1, 1, "Disassociation from Allah")],
+        })
+
+        merged = service._merge_editions({
+            "uthmani": uthmani, "simple": simple, "translation_en": translation,
+        })
+
+        al_fatiha_ayah = next(a for a in merged if a["key"] == "1:1")
+        at_tawbah_ayah = next(a for a in merged if a["key"] == "9:1")
+
+        assert al_fatiha_ayah["basmalah"] is None
+        assert al_fatiha_ayah["text_simple"] == "بسم الله الرحمن الرحيم"
+        assert at_tawbah_ayah["basmalah"] is None
+        assert at_tawbah_ayah["text_simple"] == "براءة من الله"
+
     def test_preserves_surah_and_location_metadata(self):
         service = QuranCorpusService()
         uthmani = _edition_payload({2: [(255, 282, "ayat-al-kursi")]})
@@ -137,6 +186,7 @@ class TestLoadOrFetchCache:
             "page": 1,
             "text_uthmani": "uthmani-text-1",
             "text_simple": "simple-text-1",
+            "basmalah": None,  # surah 1 ayah 1 *is* the Basmalah -- nothing to strip
             "translation_en": "translation-1",
             "key": "1:1",
         }]

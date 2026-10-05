@@ -41,6 +41,11 @@ pyarabic==0.6.15
 # Hybrid Retrieval (sparse/lexical layer, fused with FAISS dense search)
 rank-bm25==0.2.2
 
+# Recitation audio decoding (wav/mp3/flac/ogg via libsndfile, no ffmpeg
+# needed) + resampling to the 16kHz Whisper expects
+soundfile==0.14.0
+scipy==1.17.1
+
 # Authentication & Security
 python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4

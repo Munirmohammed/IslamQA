@@ -43,7 +43,7 @@ FIXTURE_AYAHS = [
 
 
 @pytest.fixture
-def voice_search_service(monkeypatch):
+def voice_search_service(monkeypatch, tmp_path):
     """A VoiceSearchService with its BM25/fuzzy indexes built over the tiny
     fixture corpus above, dense search stubbed to return nothing (isolating
     the sparse+fuzzy+fusion path), and reranking disabled (no cross-encoder
@@ -51,6 +51,11 @@ def voice_search_service(monkeypatch):
     monkeypatch.setattr(settings, "ENABLE_RERANKING", False)
 
     service = VoiceSearchService()
+    # Redirect BM25 persistence to a throwaway path -- _build_bm25_index
+    # writes to disk, and the real data/quran/ index must not be clobbered
+    # with this tiny fixture corpus.
+    service.bm25_index.index_path = str(tmp_path / "bm25.pkl")
+    service.bm25_index.ids_path = str(tmp_path / "bm25_ids.pkl")
     service.ayahs_by_key = {a["key"]: a for a in FIXTURE_AYAHS}
     service._build_bm25_index(FIXTURE_AYAHS, force_rebuild=True)
     service._build_char_ngram_index(FIXTURE_AYAHS)

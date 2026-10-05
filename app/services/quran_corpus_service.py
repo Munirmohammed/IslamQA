@@ -33,6 +33,26 @@ EDITIONS = {
 }
 EXPECTED_AYAH_COUNT = 6236
 
+# alquran.cloud's text editions embed the Basmalah into ayah 1's text for
+# every surah except Al-Fatiha (where the Basmalah *is* ayah 1) and
+# At-Tawbah (which has none) -- this matches traditional mushaf printing,
+# but it means exact-text matching (recitation diffing, and to a lesser
+# extent voice search) would wrongly flag a correct recitation of just the
+# ayah itself as "missing" the Basmalah. Stripped out here into its own
+# field so text_uthmani/text_simple hold only the ayah's own recitable
+# content, with the Basmalah still available for display.
+#
+# Detection is done on the diacritic-free `simple` text (an exact literal
+# match there is reliable); the same *word count* is then stripped from the
+# Uthmani text rather than literal-matching a hand-typed, diacritic-heavy
+# Uthmani Basmalah string (fragile -- one wrong diacritic byte and the match
+# silently fails). Word boundaries line up between the two editions since
+# Uthmani is the same text as simple, just with diacritics attached to
+# existing letters, not inserted as extra tokens.
+BASMALAH_SIMPLE = "بسم الله الرحمن الرحيم"
+BASMALAH_WORD_COUNT = len(BASMALAH_SIMPLE.split())
+SURAHS_WITHOUT_LEADING_BASMALAH = {1, 9}
+
 
 class QuranCorpusService:
     """Loads and serves the full Quran ayah corpus."""
@@ -88,6 +108,18 @@ class QuranCorpusService:
             for a_uth, a_simple, a_trans in zip(
                 s_uth["ayahs"], s_simple["ayahs"], s_trans["ayahs"]
             ):
+                text_uthmani = a_uth["text"]
+                text_simple = a_simple["text"]
+                basmalah = None
+
+                if (
+                    a_uth["numberInSurah"] == 1
+                    and s_uth["number"] not in SURAHS_WITHOUT_LEADING_BASMALAH
+                ):
+                    basmalah, text_uthmani, text_simple = self._split_leading_basmalah(
+                        text_uthmani, text_simple
+                    )
+
                 merged.append({
                     "surah_number": s_uth["number"],
                     "surah_name_ar": s_uth["name"],
@@ -98,12 +130,32 @@ class QuranCorpusService:
                     "global_ayah_number": a_uth["number"],
                     "juz": a_uth["juz"],
                     "page": a_uth["page"],
-                    "text_uthmani": a_uth["text"],
-                    "text_simple": a_simple["text"],
+                    "text_uthmani": text_uthmani,
+                    "text_simple": text_simple,
+                    "basmalah": basmalah,
                     "translation_en": a_trans["text"],
                     "key": f"{s_uth['number']}:{a_uth['numberInSurah']}",
                 })
         return merged
+
+    @staticmethod
+    def _split_leading_basmalah(text_uthmani: str, text_simple: str):
+        """Detect the Basmalah on the diacritic-free `text_simple` (a
+        reliable exact match), then strip the same leading word count from
+        both `text_uthmani` and `text_simple`. Returns
+        (basmalah_uthmani_or_None, remaining_uthmani, remaining_simple) --
+        if the simple text doesn't start with the expected Basmalah (an
+        edition/encoding surprise), both texts are returned unchanged rather
+        than risking a bad split."""
+        simple_words = text_simple.lstrip("﻿ \t").split()
+        if " ".join(simple_words[:BASMALAH_WORD_COUNT]) != BASMALAH_SIMPLE:
+            return None, text_uthmani, text_simple
+
+        uthmani_words = text_uthmani.lstrip("﻿ \t").split()
+        basmalah_uthmani = " ".join(uthmani_words[:BASMALAH_WORD_COUNT])
+        remaining_uthmani = " ".join(uthmani_words[BASMALAH_WORD_COUNT:])
+        remaining_simple = " ".join(simple_words[BASMALAH_WORD_COUNT:])
+        return basmalah_uthmani, remaining_uthmani, remaining_simple
 
     def _index_by_key(self):
         self._by_key = {ayah["key"]: ayah for ayah in self.ayahs}

@@ -58,6 +58,12 @@ async def lifespan(app: FastAPI):
         await voice_search_service.initialize()
     app.state.voice_search_service = voice_search_service
 
+    # Initialize Quran recitation mistake-checker
+    from app.services.recitation_asr_service import recitation_asr_service
+    if settings.ENABLE_RECITATION_CHECKER:
+        await recitation_asr_service.initialize()
+    app.state.recitation_asr_service = recitation_asr_service
+
     logger.info("Application startup complete")
     
     yield
