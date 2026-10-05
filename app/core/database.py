@@ -6,8 +6,8 @@ SQLAlchemy setup with SQLite for local development
 # Import everything from SQLite-compatible models
 from app.core.database_sqlite import (
     Base, engine, SessionLocal, get_db,
-    Question, Answer, Source, UserInteraction, 
-    ScrapingJob, User, DatabaseUtils, CacheUtils,
+    Question, Answer, Source, UserInteraction,
+    ScrapingJob, User, UserStreak, DatabaseUtils, CacheUtils,
     create_tables, mock_cache
 )
 from app.core.config import settings

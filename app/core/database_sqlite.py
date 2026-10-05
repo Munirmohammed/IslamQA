@@ -3,7 +3,7 @@ SQLite-compatible Database Configuration
 Modified models for local development with SQLite
 """
 
-from sqlalchemy import create_engine, MetaData, Column, Integer, String, Text, DateTime, Float, Boolean, ForeignKey
+from sqlalchemy import create_engine, MetaData, Column, Integer, String, Text, DateTime, Date, Float, Boolean, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from sqlalchemy.dialects.sqlite import JSON
@@ -128,6 +128,19 @@ class User(Base):
     rate_limit = Column(Integer, default=100)  # Requests per hour
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime)
+
+
+class UserStreak(Base):
+    """Per-user Quran reading/recitation streak and hasanat tally (gamification)."""
+    __tablename__ = "user_streaks"
+
+    user_id = Column(String(36), ForeignKey("users.id"), primary_key=True)
+    current_streak = Column(Integer, default=0)
+    longest_streak = Column(Integer, default=0)
+    last_activity_date = Column(Date)  # calendar-day granularity, UTC
+    total_verses_read = Column(Integer, default=0)
+    total_hasanat = Column(Integer, default=0)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 # Database dependency
