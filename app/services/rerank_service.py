@@ -44,8 +44,13 @@ class CrossEncoderReranker:
             logger.error(f"Failed to load cross-encoder reranker: {str(e)}")
             self.model = None
 
-    def rerank(self, query: str, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Re-sort `results` (each expected to have a 'question' field) by
+    def rerank(
+        self,
+        query: str,
+        results: List[Dict[str, Any]],
+        text_field: str = 'question',
+    ) -> List[Dict[str, Any]]:
+        """Re-sort `results` (each expected to have a `text_field` field) by
         cross-encoder relevance to `query`. Falls back to the original
         (fused-rank) order if the model isn't loaded or scoring fails —
         matching this codebase's existing fallback-on-error convention
@@ -62,7 +67,7 @@ class CrossEncoderReranker:
         remainder = results[MAX_RERANK_CANDIDATES:]
 
         try:
-            pairs = [(query, result.get('question', '')) for result in candidates]
+            pairs = [(query, result.get(text_field, '')) for result in candidates]
             scores = self.model.predict(pairs)
 
             reranked = [

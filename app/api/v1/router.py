@@ -4,7 +4,7 @@ Main router for API version 1
 """
 
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, questions, search, admin, analytics, ai_chat
+from app.api.v1.endpoints import auth, questions, search, admin, analytics, ai_chat, voice_search
 
 api_router = APIRouter()
 
@@ -15,3 +15,4 @@ api_router.include_router(search.router, prefix="/search", tags=["Search"])
 api_router.include_router(ai_chat.router, prefix="/ai", tags=["AI Chat"])  # New AI chat endpoints
 api_router.include_router(admin.router, prefix="/admin", tags=["Admin"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
+api_router.include_router(voice_search.router, prefix="/voice-search", tags=["Quran Voice Search"])

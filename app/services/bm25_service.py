@@ -26,23 +26,35 @@ IDS_PATH = "data/bm25_question_ids.pkl"
 class BM25Index:
     """Sparse (lexical) retrieval index built with BM25Okapi."""
 
-    def __init__(self):
+    def __init__(self, index_path: str = INDEX_PATH, ids_path: str = IDS_PATH):
         self.bm25: BM25Okapi = None
         self.question_ids: List[str] = []
         self.text_preprocessor = TextPreprocessor()
+        self.index_path = index_path
+        self.ids_path = ids_path
+
+    def load(self) -> bool:
+        """Try loading a persisted index from disk. Returns True on success,
+        so a caller whose documents don't come from the Question table (e.g.
+        VoiceSearchService) can reuse the disk cache without going through
+        build_index's Question-table fallback."""
+        if not (os.path.exists(self.index_path) and os.path.exists(self.ids_path)):
+            return False
+        try:
+            with open(self.index_path, "rb") as f:
+                self.bm25 = pickle.load(f)
+            with open(self.ids_path, "rb") as f:
+                self.question_ids = pickle.load(f)
+            logger.info(f"Loaded existing BM25 index with {len(self.question_ids)} questions")
+            return True
+        except Exception:
+            logger.warning("Failed to load existing BM25 index, rebuilding...")
+            return False
 
     def build_index(self, force_rebuild: bool = False):
         """Build (or load a persisted) BM25 index over all questions."""
-        if not force_rebuild and os.path.exists(INDEX_PATH) and os.path.exists(IDS_PATH):
-            try:
-                with open(INDEX_PATH, "rb") as f:
-                    self.bm25 = pickle.load(f)
-                with open(IDS_PATH, "rb") as f:
-                    self.question_ids = pickle.load(f)
-                logger.info(f"Loaded existing BM25 index with {len(self.question_ids)} questions")
-                return
-            except Exception:
-                logger.warning("Failed to load existing BM25 index, rebuilding...")
+        if not force_rebuild and self.load():
+            return
 
         logger.info("Building new BM25 index...")
 
@@ -64,19 +76,24 @@ class BM25Index:
                 tokenized_corpus.append(processed.split())
                 question_ids.append(str(question.id))
 
-            self.bm25 = BM25Okapi(tokenized_corpus)
-            self.question_ids = question_ids
-
-            os.makedirs("data", exist_ok=True)
-            with open(INDEX_PATH, "wb") as f:
-                pickle.dump(self.bm25, f)
-            with open(IDS_PATH, "wb") as f:
-                pickle.dump(question_ids, f)
-
+            self.fit(tokenized_corpus, question_ids)
             logger.info(f"Built BM25 index with {len(questions)} questions")
 
         finally:
             db.close()
+
+    def fit(self, tokenized_corpus: List[List[str]], ids: List[str]):
+        """Build and persist the BM25 index directly from an already-tokenized
+        corpus, for callers whose documents don't come from the Question
+        table (e.g. VoiceSearchService's Quran ayah corpus)."""
+        self.bm25 = BM25Okapi(tokenized_corpus)
+        self.question_ids = ids
+
+        os.makedirs(os.path.dirname(self.index_path) or ".", exist_ok=True)
+        with open(self.index_path, "wb") as f:
+            pickle.dump(self.bm25, f)
+        with open(self.ids_path, "wb") as f:
+            pickle.dump(ids, f)
 
     def search(self, query: str, language: str = "auto", top_k: int = 10) -> List[Tuple[str, float]]:
         """Return (question_id, bm25_score) pairs sorted best-first.

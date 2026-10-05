@@ -51,7 +51,13 @@ async def lifespan(app: FastAPI):
     knowledge_service = KnowledgeService()
     await knowledge_service.initialize()
     app.state.knowledge_service = knowledge_service
-    
+
+    # Initialize Quran voice search ("Tasmeea")
+    from app.services.voice_search_service import voice_search_service
+    if settings.ENABLE_VOICE_SEARCH:
+        await voice_search_service.initialize()
+    app.state.voice_search_service = voice_search_service
+
     logger.info("Application startup complete")
     
     yield

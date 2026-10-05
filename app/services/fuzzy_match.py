@@ -65,11 +65,17 @@ class CharNgramIndex:
                 corpus.append(processed)
                 question_ids.append(str(question.id))
 
-            self.matrix = self.vectorizer.fit_transform(corpus)
-            self.question_ids = question_ids
+            self.fit(corpus, question_ids)
             logger.info(f"Built char n-gram index with {len(questions)} questions")
         finally:
             db.close()
+
+    def fit(self, corpus: List[str], ids: List[str]):
+        """Build the char n-gram TF-IDF matrix from already-preprocessed
+        documents directly, for callers whose documents don't come from the
+        Question table (e.g. VoiceSearchService's Quran ayah corpus)."""
+        self.matrix = self.vectorizer.fit_transform(corpus)
+        self.question_ids = ids
 
     def search(self, query: str, language: str = "auto", top_k: int = 10) -> List[Tuple[str, float]]:
         """Return (question_id, similarity) pairs sorted best-first."""

@@ -92,6 +92,11 @@ class Settings(BaseSettings):
         default=True,
         description="Enable cross-encoder reranking of fused search results"
     )
+    ENABLE_VOICE_SEARCH: bool = Field(
+        default=True,
+        description="Enable Quran voice/text search ('Tasmeea' -- recite or "
+                     "type a fragment, find the matching ayah)"
+    )
     
     # Rate Limiting
     RATE_LIMIT_REQUESTS: int = Field(default=100, description="Requests per minute")
