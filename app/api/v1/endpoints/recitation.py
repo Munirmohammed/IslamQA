@@ -11,15 +11,18 @@ Two modes:
   then diff against the best match ("just recite and find it" mode).
 """
 
+import hashlib
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.database import User
+from app.core.database import User, get_db
 from app.core.dependencies import get_recitation_asr_service, get_voice_search_service
 from app.core.security import RateLimiter, get_optional_user
+from app.services import halaqa_service
 from app.services.quran_corpus_service import QuranCorpusService
 from app.services.recitation_asr_service import RecitationASRService, UnreadableAudioError
 from app.services.recitation_diff_service import diff_recitation
@@ -60,6 +63,7 @@ async def check_recitation(
     user: Optional[User] = Depends(get_optional_user),
     asr_service: RecitationASRService = Depends(get_recitation_asr_service),
     voice_search_service: VoiceSearchService = Depends(get_voice_search_service),
+    db: Session = Depends(get_db),
 ):
     """Check a recited ayah against the canonical text."""
     if not settings.ENABLE_RECITATION_CHECKER:
@@ -101,6 +105,16 @@ async def check_recitation(
             target_ayah = results[0]
 
         mistakes = diff_recitation(target_ayah["text_simple"], transcript)
+
+        halaqa_service.record_recitation_session(
+            db,
+            user_id=user.id if user else None,
+            surah=target_ayah["surah_number"],
+            ayah=target_ayah["ayah_number"],
+            transcript=transcript,
+            mistakes=mistakes,
+            audio_hash=hashlib.sha256(audio_bytes).hexdigest(),
+        )
 
         return RecitationCheckResponse(
             transcript=transcript,

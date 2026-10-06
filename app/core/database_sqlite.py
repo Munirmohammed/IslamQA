@@ -162,6 +162,59 @@ class MemorizationCard(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class RecitationSession(Base):
+    """A persisted recitation-check result (Phase 2's `/recitation/check`),
+    needed for the halaqa/teacher dashboard to review student history."""
+    __tablename__ = "recitation_sessions"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id"), index=True, nullable=True)  # anonymous checks stay allowed
+    surah_number = Column(Integer, nullable=False)
+    ayah_number = Column(Integer, nullable=False)
+    transcript = Column(Text)
+    mistake_count = Column(Integer, default=0)
+    is_correct = Column(Boolean, default=False)
+    audio_hash = Column(String(64), index=True)  # sha256 hex of the uploaded audio bytes
+    is_duplicate_submission = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class MistakeLog(Base):
+    """One mistake row from a RecitationSession's diff_recitation output."""
+    __tablename__ = "mistake_logs"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    session_id = Column(String(36), ForeignKey("recitation_sessions.id"), index=True, nullable=False)
+    mistake_type = Column(String(20))  # incorrect | missed | extra
+    expected = Column(Text)
+    recited = Column(Text)
+    position = Column(Integer)
+
+
+class Halaqa(Base):
+    """A teacher's study circle/class."""
+    __tablename__ = "halaqas"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    teacher_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    join_code = Column(String(12), unique=True, index=True, default=lambda: uuid.uuid4().hex[:8])
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class HalaqaMembership(Base):
+    """A student's membership in a halaqa."""
+    __tablename__ = "halaqa_memberships"
+    __table_args__ = (
+        UniqueConstraint("halaqa_id", "student_id", name="uq_halaqa_student"),
+    )
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    halaqa_id = Column(String(36), ForeignKey("halaqas.id"), index=True, nullable=False)
+    student_id = Column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    joined_at = Column(DateTime, default=datetime.utcnow)
+
+
 # Database dependency
 def get_db() -> Generator[Session, None, None]:
     """Get database session"""

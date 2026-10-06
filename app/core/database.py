@@ -7,7 +7,9 @@ SQLAlchemy setup with SQLite for local development
 from app.core.database_sqlite import (
     Base, engine, SessionLocal, get_db,
     Question, Answer, Source, UserInteraction,
-    ScrapingJob, User, UserStreak, MemorizationCard, DatabaseUtils, CacheUtils,
+    ScrapingJob, User, UserStreak, MemorizationCard,
+    RecitationSession, MistakeLog, Halaqa, HalaqaMembership,
+    DatabaseUtils, CacheUtils,
     create_tables, mock_cache
 )
 from app.core.config import settings
