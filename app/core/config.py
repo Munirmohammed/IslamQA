@@ -102,6 +102,10 @@ class Settings(BaseSettings):
         description="Enable Quran recitation mistake-checking (ASR + "
                      "word-level diff against the canonical ayah text)"
     )
+    ENABLE_TAJWEED: bool = Field(
+        default=True,
+        description="Enable tajweed rule annotation lookups"
+    )
     
     # Rate Limiting
     RATE_LIMIT_REQUESTS: int = Field(default=100, description="Requests per minute")

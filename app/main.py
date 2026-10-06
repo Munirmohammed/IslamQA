@@ -64,6 +64,11 @@ async def lifespan(app: FastAPI):
         await recitation_asr_service.initialize()
     app.state.recitation_asr_service = recitation_asr_service
 
+    # Warm the tajweed rule-annotation cache
+    from app.services.tajweed_service import tajweed_service
+    if settings.ENABLE_TAJWEED:
+        tajweed_service.load_or_fetch()
+
     logger.info("Application startup complete")
     
     yield
