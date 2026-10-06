@@ -10,6 +10,7 @@ from fastapi import Request
 from app.services.knowledge_service import KnowledgeService
 from app.services.ml_service import MLService
 from app.services.recitation_asr_service import RecitationASRService
+from app.services.tafsir_search_service import TafsirSearchService
 from app.services.voice_search_service import VoiceSearchService
 
 
@@ -31,3 +32,8 @@ def get_voice_search_service(request: Request) -> VoiceSearchService:
 def get_recitation_asr_service(request: Request) -> RecitationASRService:
     """Return the RecitationASRService initialized once at app startup."""
     return request.app.state.recitation_asr_service
+
+
+def get_tafsir_search_service(request: Request) -> TafsirSearchService:
+    """Return the TafsirSearchService initialized once at app startup."""
+    return request.app.state.tafsir_search_service

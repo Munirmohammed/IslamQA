@@ -69,6 +69,12 @@ async def lifespan(app: FastAPI):
     if settings.ENABLE_TAJWEED:
         tajweed_service.load_or_fetch()
 
+    # Initialize tafsir lookup/search
+    from app.services.tafsir_search_service import tafsir_search_service
+    if settings.ENABLE_TAFSIR:
+        await tafsir_search_service.initialize()
+    app.state.tafsir_search_service = tafsir_search_service
+
     logger.info("Application startup complete")
     
     yield

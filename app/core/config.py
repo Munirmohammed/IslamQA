@@ -106,6 +106,10 @@ class Settings(BaseSettings):
         default=True,
         description="Enable tajweed rule annotation lookups"
     )
+    ENABLE_TAFSIR: bool = Field(
+        default=True,
+        description="Enable tafsir lookup and search"
+    )
     
     # Rate Limiting
     RATE_LIMIT_REQUESTS: int = Field(default=100, description="Requests per minute")
