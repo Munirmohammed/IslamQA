@@ -4,7 +4,7 @@ Main router for API version 1
 """
 
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, questions, search, admin, analytics, ai_chat, voice_search, recitation, gamification, memorization, tajweed, halaqa, tafsir
+from app.api.v1.endpoints import auth, questions, search, admin, analytics, ai_chat, voice_search, recitation, gamification, memorization, tajweed, halaqa, tafsir, quran
 
 api_router = APIRouter()
 
@@ -22,3 +22,4 @@ api_router.include_router(memorization.router, prefix="/memorization", tags=["Me
 api_router.include_router(tajweed.router, prefix="/tajweed", tags=["Tajweed"])
 api_router.include_router(halaqa.router, prefix="/halaqa", tags=["Halaqa"])
 api_router.include_router(tafsir.router, prefix="/tafsir", tags=["Tafsir"])
+api_router.include_router(quran.router, prefix="/quran", tags=["Quran Content"])
