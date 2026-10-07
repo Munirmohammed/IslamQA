@@ -11,6 +11,7 @@ Two modes:
   then diff against the best match ("just recite and find it" mode).
 """
 
+import asyncio
 import hashlib
 from typing import Any, Dict, List, Optional
 
@@ -80,7 +81,10 @@ async def check_recitation(
     audio_bytes = await audio.read()
 
     try:
-        transcript = asr_service.transcribe(audio_bytes)
+        # Plain synchronous, CPU-bound (audio decode + Whisper inference) --
+        # offload to a worker thread so it doesn't block the event loop for
+        # every other in-flight request.
+        transcript = await asyncio.to_thread(asr_service.transcribe, audio_bytes)
     except UnreadableAudioError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:

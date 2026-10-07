@@ -39,7 +39,16 @@ async def lifespan(app: FastAPI):
     """Application lifespan management"""
     # Startup
     logger.info("Starting Islamic Q&A Chatbot Backend")
-    
+
+    # Ensure all SQLAlchemy models have a backing table. This is idempotent
+    # (CREATE TABLE IF NOT EXISTS semantics via checkfirst) and never touches
+    # existing tables/data, so it's safe to run on every startup. Without this,
+    # a table added to database_sqlite.py after the local SQLite file was first
+    # created would never materialize, since create_tables() was previously
+    # only invoked from one-off setup/seed scripts, not from app startup.
+    from app.core.database import create_tables
+    create_tables()
+
     # Initialize ML models
     from app.services.ml_service import MLService
     ml_service = MLService()

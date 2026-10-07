@@ -16,6 +16,7 @@ coupled to Question/Answer DB hydration and Redis embedding caching that
 don't apply to this static corpus.
 """
 
+import asyncio
 import os
 from typing import Any, Dict, List, Tuple
 
@@ -154,6 +155,16 @@ class VoiceSearchService:
         if not self.is_initialized:
             await self.initialize()
 
+        # The actual search (dense FAISS lookup, BM25, fuzzy fallback,
+        # cross-encoder rerank) is plain synchronous CPU work -- none of it
+        # was actually yielding to the event loop despite this method being
+        # `async def`, so a slow search here used to block every other
+        # request (including unrelated ones like /health) for its full
+        # duration. Running it in a worker thread lets the loop keep
+        # serving other requests concurrently.
+        return await asyncio.to_thread(self._search_sync, query, top_k)
+
+    def _search_sync(self, query: str, top_k: int) -> Dict[str, Any]:
         candidate_pool = max(top_k * 3, 30)
 
         dense_ranked_keys = [key for key, _ in self._dense_search(query, candidate_pool)]
